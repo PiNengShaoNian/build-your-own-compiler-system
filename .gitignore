@@ -1,6 +1,8 @@
 # exe
 cit
 
+.depend
+
 *.o
 
 .vscode

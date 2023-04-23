@@ -2,6 +2,8 @@
 #include "error.h"
 #include "lexer.h"
 #include "token.h"
+#include "parser.h"
+#include "assert.h"
 
 int main(int argc, char *argv[])
 {
@@ -19,10 +21,10 @@ int main(int argc, char *argv[])
         Scanner scanner(srcfiles[0]);
         Lexer lexer(scanner);
         Error err(&scanner);
+        Parser parser(lexer);
 
-        for (Token *t = lexer.tokenize(); t->tag != END; t = lexer.tokenize())
-        {
-            printf("%s\t", t->toString().c_str());
-        }
+        parser.analyse();
+
+        assert(lexer.tokenize()->tag == END);
     }
 }
