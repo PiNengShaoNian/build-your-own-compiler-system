@@ -76,6 +76,9 @@ class Parser
     Lexer &lexer; // 词法分析器
     Token *look;  // 超前查看的字符
 
+    // 符号表
+    SymTab &symtab;
+
     // 语法分析与错误修复
     void move();                                             // 移进
     bool match(Tag t);                                       // 匹配,成功则移进
@@ -83,7 +86,7 @@ class Parser
 
 public:
     // 构造与初始化
-    Parser(Lexer &lex);
+    Parser(Lexer &lex, SymTab &tab);
 
     // 外部调用接口
     void analyse(); // 语法分析主程序

@@ -11,8 +11,10 @@ public:
     static int warnNum;  // 警告个数
 
     // 错误接口
-    static void lexError(int code);           // 打印词法错误
-    static void synError(int code, Token *t); // 打印语法错误
+    static void lexError(int code);                   // 打印词法错误
+    static void synError(int code, Token *t);         // 打印语法错误
+    static void semError(int code, string name = ""); // 打印语义错误
+    static void semWarn(int code, string name = "");  // 打印语义警告
 };
 
 // 错误级别,可选，用于修饰错误信息头部

@@ -4,6 +4,7 @@
 #include "token.h"
 #include "parser.h"
 #include "assert.h"
+#include "symtab.h"
 
 int main(int argc, char *argv[])
 {
@@ -21,7 +22,8 @@ int main(int argc, char *argv[])
         Scanner scanner(srcfiles[0]);
         Lexer lexer(scanner);
         Error err(&scanner);
-        Parser parser(lexer);
+        SymTab symTab;
+        Parser parser(lexer, symTab);
 
         parser.analyse();
 

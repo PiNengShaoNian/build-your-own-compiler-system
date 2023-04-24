@@ -3,11 +3,13 @@
 #include "lexer.h"
 #include "error.h"
 #include "compiler.h"
+#include "symtab.h"
+#include "symbol.h"
 
 /*******************************************************************************
                                    语法分析器
 *******************************************************************************/
-Parser::Parser(Lexer &lex) : lexer(lex) {}
+Parser::Parser(Lexer &lex, SymTab &tab) : lexer(lex), symtab(tab) {}
 
 /*
     语法分析主程序
@@ -163,6 +165,7 @@ void Parser::def(bool ext, Tag t)
         }
         else
             recovery(F(SEMICON) _(COMMA) _(ASSIGN), ID_LOST, ID_WRONG);
+        symtab.addVar(init(ext, t, true, name)); // 新建一个指针变量
         deflist(ext, t);
     }
     else
@@ -185,15 +188,18 @@ void Parser::idtail(bool ext, Tag t, bool ptr, string name)
 {
     if (match(LPAREN)) // 函数
     {
-        // TODO
+        symtab.enter();
         vector<Var *> paraList; // 参数列表
         para(paraList);
         if (!match(RPAREN))
             recovery(F(LBRACK) _(SEMICON), RPAREN_LOST, RPAREN_WRONG);
-        funtail(NULL);
+        Fun *fun = new Fun(ext, t, name, paraList);
+        funtail(fun);
+        symtab.leave();
     }
     else
     {
+        symtab.addVar(varrdef(ext, t, false, name));
         deflist(ext, t);
     }
 }
@@ -213,11 +219,9 @@ Var *Parser::paradatatail(Tag t, string name)
         } // 可以没有指定长度
         if (!match(RBRACK))
             recovery(F(COMMA) _(RPAREN), RBRACK_LOST, RBRACK_WRONG);
-        // TODO
-        return NULL;
+        return new Var(symtab.getScopePath(), false, t, name, len);
     }
-    // TODO
-    return NULL;
+    return new Var(symtab.getScopePath(), false, t, false, name);
 }
 
 /*
@@ -235,8 +239,7 @@ Var *Parser::paradata(Tag t)
         }
         else
             recovery(F(COMMA) _(RPAREN), ID_LOST, ID_WRONG);
-        // TODO
-        return NULL;
+        return new Var(symtab.getScopePath(), false, t, true, name);
     }
     else if (F(ID))
     {
@@ -247,8 +250,7 @@ Var *Parser::paradata(Tag t)
     else
     {
         recovery(F(COMMA) _(RPAREN) _(LBRACK), ID_LOST, ID_WRONG);
-        // TODO
-        return NULL;
+        return new Var(symtab.getScopePath(), false, t, false, name);
     }
 }
 
@@ -261,7 +263,7 @@ void Parser::para(vector<Var *> &list)
         return;
     Tag t = type();
     Var *v = paradata(t);
-    // TODO
+    symtab.addVar(v); // 保存参数到符号表
     list.push_back(v);
     paralist(list);
 }
@@ -275,7 +277,7 @@ void Parser::paralist(vector<Var *> &list)
     { // 下一个参数
         Tag t = type();
         Var *v = paradata(t);
-        // TODO
+        symtab.addVar(v);
         list.push_back(v);
         paralist(list);
     }
@@ -288,12 +290,13 @@ void Parser::funtail(Fun *f)
 {
     if (match(SEMICON)) // 函数声明
     {
-        // TODO
+        symtab.decFun(f);
     }
     else // 函数定义
     {
-        // TODO
+        symtab.defFun(f);
         block();
+        symtab.endDefFun();
     }
 }
 
@@ -333,8 +336,7 @@ void Parser::subprogram()
 void Parser::localdef()
 {
     Tag t = type();
-    // TODO
-    defdata(false, t);
+    symtab.addVar(defdata(false, t));
     deflist(false, t);
 }
 
@@ -397,7 +399,7 @@ void Parser::statement()
 */
 void Parser::whilestat()
 {
-    // TODO
+    symtab.enter();
     match(KW_WHILE);
     if (!match(LPAREN))
         recovery(EXPR_FIRST || F(RPAREN), LPAREN_LOST, LPAREN_WRONG);
@@ -408,6 +410,7 @@ void Parser::whilestat()
         block();
     else
         statement();
+    symtab.leave();
 }
 
 /*
@@ -416,7 +419,7 @@ void Parser::whilestat()
 */
 void Parser::dowhilestat()
 {
-    // TODO
+    symtab.enter();
     match(KW_DO);
     if (F(LBRACE))
         block();
@@ -426,6 +429,7 @@ void Parser::dowhilestat()
         recovery(F(LPAREN), WHILE_LOST, WHILE_WRONG);
     if (!match(LPAREN))
         recovery(EXPR_FIRST || F(RPAREN), LPAREN_LOST, LPAREN_WRONG);
+    symtab.leave();
     Var *cond = altexpr();
     if (!match(RPAREN))
         recovery(F(SEMICON), RPAREN_LOST, RPAREN_WRONG);
@@ -439,7 +443,7 @@ void Parser::dowhilestat()
 */
 void Parser::forstat()
 {
-    // TODO
+    symtab.enter();
     match(KW_FOR);
     if (!match(LPAREN))
         recovery(TYPE_FIRST || EXPR_FIRST || F(SEMICON), LPAREN_LOST, LPAREN_WRONG);
@@ -455,6 +459,7 @@ void Parser::forstat()
         block();
     else
         statement();
+    symtab.leave();
 }
 
 /*
@@ -477,7 +482,7 @@ void Parser::forinit()
 */
 void Parser::ifstat()
 {
-    // TODO
+    symtab.enter();
     match(KW_IF);
     if (!match(LPAREN))
         recovery(EXPR_FIRST, LPAREN_LOST, LPAREN_WRONG);
@@ -489,6 +494,8 @@ void Parser::ifstat()
         block();
     else
         statement();
+    symtab.leave();
+
     // TODO
 
     if (F(KW_ELSE))
@@ -514,11 +521,12 @@ void Parser::elsestat()
 {
     if (match(KW_ELSE))
     {
-        // TODO
+        symtab.enter();
         if (F(LBRACE))
             block();
         else
             statement();
+        symtab.leave();
     }
 }
 
@@ -527,7 +535,7 @@ void Parser::elsestat()
 */
 void Parser::switchstat()
 {
-    // TODO
+    symtab.enter();
     match(KW_SWITCH);
     if (!match(LPAREN))
         recovery(EXPR_FIRST, LPAREN_LOST, LPAREN_WRONG);
@@ -540,7 +548,7 @@ void Parser::switchstat()
     casestat(cond);
     if (!match(RBRACE))
         recovery(TYPE_FIRST || STATEMENT_FIRST, RBRACE_LOST, RBRACE_WRONG);
-    // TODO
+    symtab.leave();
 }
 
 /*
@@ -554,14 +562,18 @@ void Parser::casestat(Var *cond)
         Var *lb = caselabel();
         if (!match(COLON))
             recovery(TYPE_FIRST || STATEMENT_FIRST, COLON_LOST, COLON_WRONG);
+        symtab.enter();
         subprogram();
+        symtab.leave();
         casestat(cond);
     }
     else if (match(KW_DEFAULT))
     { // default默认执行
         if (!match(COLON))
             recovery(TYPE_FIRST || STATEMENT_FIRST, COLON_LOST, COLON_WRONG);
+        symtab.enter();
         subprogram();
+        symtab.leave();
     }
 }
 
@@ -591,7 +603,7 @@ void Parser::deflist(bool ext, Tag t)
 {
     if (match(COMMA)) // 下一个声明
     {
-        defdata(ext, t);
+        symtab.addVar(defdata(ext, t));
         deflist(ext, t);
     }
     else if (match(SEMICON)) // 最后一个声明
@@ -601,7 +613,7 @@ void Parser::deflist(bool ext, Tag t)
         if (F(ID) _(MUL)) // 逗号
         {
             recovery(1, COMMA_LOST, COMMA_WRONG);
-            defdata(ext, t);
+            symtab.addVar(defdata(ext, t));
             deflist(ext, t);
         }
         else
@@ -626,8 +638,7 @@ Var *Parser::varrdef(bool ext, Tag t, bool ptr, string name)
             recovery(F(RBRACK), NUM_LOST, NUM_WRONG);
         if (!match(RBRACK))
             recovery(F(COMMA) _(SEMICON), RBRACK_LOST, RBRACK_WRONG);
-        // TODO
-        return NULL;
+        return new Var(symtab.getScopePath(), ext, t, name, len); // 新的数组
     }
     else
         return init(ext, t, ptr, name);
@@ -643,8 +654,8 @@ Var *Parser::init(bool ext, Tag t, bool ptr, string name)
     {
         initVal = expr();
     }
-    // TODO
-    return NULL;
+
+    return new Var(symtab.getScopePath(), ext, t, ptr, name, initVal); // 新的变量或者指针
 }
 
 /*
@@ -910,7 +921,11 @@ Var *Parser::literal()
     Var *v = NULL;
     if (F(NUM) _(STR) _(CH))
     {
-        // TODO
+        v = new Var(look);
+        if (F(STR))
+            symtab.addStr(v); // 字符串常量记录
+        else
+            symtab.addVar(v); // 其他常量也记录到符号表
         move();
     }
     else
@@ -929,6 +944,7 @@ Var *Parser::idexpr(string name)
         Var *index = expr();
         if (!match(RBRACK))
             recovery(LVAL_OPR, LBRACK_LOST, LBRACK_WRONG);
+        Var *array = symtab.getVar(name); // 获取数组
         // TODO
     }
     else if (match(LPAREN))
@@ -937,10 +953,11 @@ Var *Parser::idexpr(string name)
         realarg(args);
         if (!match(RPAREN))
             recovery(RVAL_OPR, RPAREN_LOST, RPAREN_WRONG);
+        Fun *function = symtab.getFun(name, args); // 获取函数
         // TODO
     }
     else
-        ;
+        v = symtab.getVar(name); // 获取变量
 
     return v;
 }
