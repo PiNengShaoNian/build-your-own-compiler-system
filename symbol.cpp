@@ -336,3 +336,27 @@ void Fun::define(Fun *def)
     externed = false;       // 定义
     paraVar = def->paraVar; // 拷贝参数
 }
+
+/*
+    添加一条中间代码
+*/
+void Fun::addInst(InterInst *inst)
+{
+    interCode.addInst(inst);
+}
+
+/*
+    设置函数返回点
+*/
+void Fun::setReturnPoint(InterInst *inst)
+{
+    returnPoint = inst;
+}
+
+/*
+    获取函数返回点
+*/
+InterInst *Fun::getReturnPoint()
+{
+    return returnPoint;
+}

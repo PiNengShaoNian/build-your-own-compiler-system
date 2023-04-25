@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "intercode.h"
 
 /*******************************************************************************
                                    变量结构体
@@ -81,7 +82,9 @@ class Fun
     bool relocated; // 栈帧重定位标记
 
     // 作用域管理
-    vector<int> scopeEsp; // 当前作用域初始esp，动态控制作用域的分配和释放
+    vector<int> scopeEsp;   // 当前作用域初始esp，动态控制作用域的分配和释放
+    InterCode interCode;    // 中间代码
+    InterInst *returnPoint; // 返回点
 
 public:
     // 构造函数与析构函数
@@ -97,6 +100,11 @@ public:
     void enterScope();     // 进入一个新的作用域
     void leaveScope();     // 离开当前作用域
     void locate(Var *var); // 定位局部变了栈帧偏移
+
+    // 中间代码
+    void addInst(InterInst *inst);        // 添加一条中间代码
+    void setReturnPoint(InterInst *inst); // 设置函数返回点
+    InterInst *getReturnPoint();          // 获取函数返回点
 
     // 外部调用掉口
     bool getExtern();         // 获取extern

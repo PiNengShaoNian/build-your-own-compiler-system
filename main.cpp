@@ -5,6 +5,7 @@
 #include "parser.h"
 #include "assert.h"
 #include "symtab.h"
+#include "genir.h"
 
 int main(int argc, char *argv[])
 {
@@ -23,7 +24,8 @@ int main(int argc, char *argv[])
         Lexer lexer(scanner);
         Error err(&scanner);
         SymTab symTab;
-        Parser parser(lexer, symTab);
+        GenIR genIr(symTab);
+        Parser parser(lexer, symTab, genIr);
 
         parser.analyse();
 

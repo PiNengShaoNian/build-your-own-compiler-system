@@ -9,7 +9,7 @@
 /*******************************************************************************
                                    语法分析器
 *******************************************************************************/
-Parser::Parser(Lexer &lex, SymTab &tab) : lexer(lex), symtab(tab) {}
+Parser::Parser(Lexer &lex, SymTab &tab, GenIR &inter) : lexer(lex), symtab(tab), ir(inter) {}
 
 /*
     语法分析主程序

@@ -2,6 +2,7 @@
 #include "error.h"
 #include "symbol.h"
 #include "compiler.h"
+#include "genir.h"
 
 // 打印语义错误
 #define SEMERROR(code, name) Error::semError(code, name);
@@ -63,6 +64,14 @@ SymTab::~SymTab()
     hash_map<string, Var *, string_hash>::iterator strIt, strEnd = strTab.end();
     for (strIt = strTab.begin(); strIt != strEnd; ++strIt)
         delete strIt->second;
+}
+
+/*
+    设置中间代码生成器
+*/
+void SymTab::setIr(GenIR *ir)
+{
+    this->ir = ir;
 }
 
 /*
@@ -221,8 +230,8 @@ void SymTab::defFun(Fun *fun)
         delete fun; // 删除当前函数对象
         fun = last; // 公用函数结构体
     }
-    curFun = fun; // 当前分析的函数
-    // TODO
+    curFun = fun;           // 当前分析的函数
+    ir->genFunHead(curFun); // 产生函数入口
 }
 
 /*
@@ -230,8 +239,19 @@ void SymTab::defFun(Fun *fun)
 */
 void SymTab::endDefFun()
 {
-    // TODO
-    curFun = NULL; // 当前分析的函数置空
+    ir->genFunTail(curFun); // 产生函数出口
+    curFun = NULL;          // 当前分析的函数置空
+}
+
+/*
+    添加一条中间代码
+*/
+void SymTab::addInst(InterInst *inst)
+{
+    if (curFun)
+        curFun->addInst(inst);
+    else
+        delete inst;
 }
 
 /*

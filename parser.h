@@ -79,6 +79,9 @@ class Parser
     // 符号表
     SymTab &symtab;
 
+    // 中间代码生成器
+    GenIR &ir;
+
     // 语法分析与错误修复
     void move();                                             // 移进
     bool match(Tag t);                                       // 匹配,成功则移进
@@ -86,7 +89,7 @@ class Parser
 
 public:
     // 构造与初始化
-    Parser(Lexer &lex, SymTab &tab);
+    Parser(Lexer &lex, SymTab &tab, GenIR &inter);
 
     // 外部调用接口
     void analyse(); // 语法分析主程序

@@ -32,6 +32,9 @@ class SymTab
     int scopeId;           // 作用域唯一编号
     vector<int> scopePath; // 动态记录作用域的路径，全局为0,0 1 2-第一个函数的第一个局部块
 
+    // 中间代码生成器
+    GenIR *ir;
+
 public:
     static Var *voidVar; // 特殊变量
     static Var *zero;    // 特殊变量
@@ -56,7 +59,9 @@ public:
     void defFun(Fun *fun);                         // 定义一个函数
     void endDefFun();                              // 结束定义一个函数
     Fun *getFun(string name, vector<Var *> &args); // 根据调用类型，获取一个函数
+    void addInst(InterInst *inst);                 // 添加一条中间代码
 
     // 外部调用接口
+    void setIr(GenIR *ir); // 设置中间代码生成器
     vector<int> &getScopePath(); // 获取scopePath
 };
