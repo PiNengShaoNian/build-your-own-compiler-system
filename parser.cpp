@@ -5,6 +5,7 @@
 #include "compiler.h"
 #include "symtab.h"
 #include "symbol.h"
+#include "genir.h"
 
 /*******************************************************************************
                                    语法分析器
@@ -381,8 +382,7 @@ void Parser::statement()
         break;
     case KW_RETURN:
         move();
-        // TODO
-        altexpr();
+        ir.genReturn(altexpr());
         if (!match(SEMICON))
             recovery(TYPE_FIRST || STATEMENT_FIRST || F(RBRACE), SEMICON_LOST, SEMICON_WRONG);
         break;
@@ -592,8 +592,8 @@ Var *Parser::altexpr()
 {
     if (EXPR_FIRST)
         return expr();
-    // TODO
-    return NULL; // 返回特殊VOID变量
+
+    return Var::getVoid(); // 返回特殊VOID变量
 }
 
 /*

@@ -13,6 +13,14 @@
 *******************************************************************************/
 
 /*
+    获取VOID特殊变量
+*/
+Var *Var::getVoid()
+{
+    return SymTab::voidVar;
+}
+
+/*
     void变量
 */
 Var::Var()
@@ -24,6 +32,19 @@ Var::Var()
     literal = false; // 消除字面量标志
     type = KW_VOID;  // hack类型
     isPtr = true;    // 消除基本类型标志
+}
+
+/*
+    拷贝出一个临时变量
+*/
+Var::Var(vector<int> &sp, Var *v)
+{
+    clear();
+    scopePath = sp; // 初始化路径
+    setType(v->type);
+    setPtr(v->isPtr || v->isArray); // 数组 指针都是指针
+    setName("");
+    setLeft(false);
 }
 
 /*
@@ -193,6 +214,14 @@ vector<int> &Var::getPath()
 }
 
 /*
+    获取指针变量
+*/
+Var *Var::getPointer()
+{
+    return ptr;
+}
+
+/*
     获取名字
 */
 string Var::getName()
@@ -251,6 +280,11 @@ void Fun::setExtern(bool ext)
 bool Fun::getExtern()
 {
     return externed;
+}
+
+Tag Fun::getType()
+{
+    return type;
 }
 
 /*
@@ -359,4 +393,20 @@ void Fun::setReturnPoint(InterInst *inst)
 InterInst *Fun::getReturnPoint()
 {
     return returnPoint;
+}
+
+/*
+    是数字
+*/
+bool Var::isVoid()
+{
+    return type == KW_VOID;
+}
+
+/*
+    是引用类型
+*/
+bool Var::isRef()
+{
+    return !!ptr;
 }

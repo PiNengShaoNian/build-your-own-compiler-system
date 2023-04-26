@@ -2,7 +2,11 @@
 #include <sstream>
 #include "symbol.h"
 #include "symtab.h"
+#include "intercode.h"
 #include "error.h"
+
+// 打印语义错误
+#define SEMERROR(code) Error::semError(code)
 
 int GenIR::lbNum = 0;
 
@@ -42,6 +46,49 @@ string GenIR::genLb()
     stringstream ss;
     ss << lbNum;
     return lb + ss.str();
+}
+
+/*
+    拷贝赋值语句,处理取*p值的情况
+*/
+Var *GenIR::genAssign(Var *val)
+{
+    Var *tmp = new Var(symtab.getScopePath(), val); // 拷贝变量信息
+    symtab.addVar(tmp);
+    if (val->isRef()) // 中间代码tmp=*(val->ptr)
+    {
+        // 中间代码tmp=*(val->ptr)
+        symtab.addInst(new InterInst(OP_GET, tmp, val->getPointer()));
+    }
+    else
+    {
+        symtab.addInst(new InterInst(OP_AS, tmp, val)); // 中间代码tmp=val
+    }
+    return tmp;
+}
+
+/*
+    产生return语句
+*/
+void GenIR::genReturn(Var *ret)
+{
+    if (!ret)
+        return;
+    Fun *fun = symtab.getCurFun();
+    if (ret->isVoid() && fun->getType() != KW_VOID || ret->isBase() && fun->getType() == KW_VOID) // 类型不兼容
+    {
+        SEMERROR(RETURN_ERR); // return语句和函数返回值类型不匹配
+        return;
+    }
+    InterInst *returnPoint = fun->getReturnPoint(); // 获取返回点
+    if (ret->isVoid())
+        symtab.addInst(new InterInst(OP_RET, returnPoint)); // return returnPoint
+    else
+    {
+        if (ret->isRef()) // 处理ret是*p情况
+            ret = genAssign(ret);
+        symtab.addInst(new InterInst(OP_RETV, returnPoint, ret)); // return returnPoint ret
+    }
 }
 
 /*

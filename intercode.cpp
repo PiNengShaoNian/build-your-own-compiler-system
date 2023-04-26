@@ -19,6 +19,18 @@ void InterInst::init()
 }
 
 /*
+    一般运算指令
+*/
+InterInst::InterInst(Operator op, Var *rs, Var *arg1, Var *arg2)
+{
+    init();
+    this->op = op;
+    this->result = rs;
+    this->arg1 = arg1;
+    this->arg2 = arg2;
+}
+
+/*
     函数调用指令
 */
 InterInst::InterInst(Operator op, Fun *fun, Var *rs)
@@ -37,6 +49,18 @@ InterInst::InterInst()
 {
     init();
     label = GenIR::genLb();
+}
+
+/*
+    条件跳转指令
+*/
+InterInst::InterInst(Operator op, InterInst *tar, Var *arg1, Var *arg2)
+{
+    init();
+    this->op = op;
+    this->target = tar;
+    this->arg1 = arg1;
+    this->arg2 = arg2;
 }
 
 /*******************************************************************************

@@ -174,6 +174,14 @@ Fun *SymTab::getFun(string name, vector<Var *> &args)
 }
 
 /*
+    获取当前分析的函数
+*/
+Fun *SymTab::getCurFun()
+{
+    return curFun;
+}
+
+/*
     声明一个函数
 */
 void SymTab::decFun(Fun *fun)
