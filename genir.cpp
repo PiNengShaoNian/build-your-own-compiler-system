@@ -368,6 +368,129 @@ Var *GenIR::genMod(Var *lval, Var *rval)
 }
 
 /*
+    左单目运算语句
+*/
+Var *GenIR::genOneOpLeft(Tag opt, Var *val)
+{
+    if (!val)
+        return NULL;
+    if (val->isVoid())
+    {
+        SEMERROR(EXPR_IS_VOID); // void函数返回值不能出现在表达式中
+        return NULL;
+    }
+    //&x *p 运算单独处理
+
+    if (opt == LEA)
+        return genLea(val); // 取址语句
+    if (opt == MUL)
+        return genPtr(val); // 指针取值语句
+
+    //++ --
+    if (opt == INC)
+        return genIncL(val); // 左自加语句
+    if (opt == DEC)
+        return genDecL(val); // 左自减语句
+
+    // not minus ++ --
+    if (val->isRef())
+        val = genAssign(val); // 处理(*p)
+    if (opt == NOT)
+        return genNot(val); // not语句
+    if (opt == SUB)
+        return genMinus(val); // 取负语句
+    return val;
+}
+
+/*
+    取反
+*/
+Var *GenIR::genNot(Var *val)
+{
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 生成整数
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_NOT, tmp, val)); // 中间代码tmp=-val
+    return tmp;
+}
+
+/*
+    取负
+*/
+Var *GenIR::genMinus(Var *val)
+{
+    if (!val->isBase())
+    {
+        SEMERROR(EXPR_NOT_BASE); // 运算对象不是基本类型
+        return val;
+    }
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 生成整数
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_NEG, tmp, val)); // 中间代码tmp=-val
+    return tmp;
+}
+
+/*
+    左自加
+*/
+Var *GenIR::genIncL(Var *val)
+{
+    if (!val->getLeft())
+    {
+        SEMERROR(EXPR_NOT_LEFT_VAL);
+        return val;
+    }
+    if (val->isRef()) //++*p情况 => t1=*p t2=t1+1 *p=t2
+    {
+        Var *t1 = genAssign(val);                // t1=*p
+        Var *t2 = genAdd(t1, Var::getStep(val)); // t2 = t1 + 1
+        return genAssign(val, t2);               // *p = t2
+    }
+    symtab.addInst(new InterInst(OP_ADD, val, val, Var::getStep(val)));
+    return val;
+}
+
+/*
+    左自减
+*/
+Var *GenIR::genDecL(Var *val)
+{
+    if (!val->getLeft())
+    {
+        SEMERROR(EXPR_NOT_LEFT_VAL);
+        return val;
+    }
+    if (val->isRef()) // --*p情况 => t1=*p t2=t1-1 *p=t2
+    {
+        Var *t1 = genAssign(val);                // t1=*p
+        Var *t2 = genSub(t1, Var::getStep(val)); // t2=t1-1
+        return genAssign(val, t2);               // *p=t2
+    }
+    symtab.addInst(new InterInst(OP_SUB, val, val, Var::getStep(val))); // 中间代码--val
+    return val;
+}
+
+/*
+    取址语句
+*/
+Var *GenIR::genLea(Var *val)
+{
+    if (!val->getLeft())
+    {
+        SEMERROR(EXPR_NOT_LEFT_VAL); // 不能取地址
+        return val;
+    }
+    if (val->isRef())             // 类似&*p运算
+        return val->getPointer(); // 取出变量的指针,&*(val->ptr)等价于ptr
+    else                          // 一般取地址运算
+    {
+        Var *tmp = new Var(symtab.getScopePath(), val->getType(), true); // 产生局部变量tmp
+        symtab.addVar(tmp);                                              // 插入声明
+        symtab.addInst(new InterInst(OP_LEA, tmp, val));                 // 中间代码tmp=&val
+        return tmp;
+    }
+}
+
+/*
     产生return语句
 */
 void GenIR::genReturn(Var *ret)

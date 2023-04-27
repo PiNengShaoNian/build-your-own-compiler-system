@@ -28,7 +28,14 @@ class GenIR
     Var *genMod(Var *lval, Var *rval);  // 取模
 
     // 单目运算
-    Var *genPtr(Var *val); // 指针取值语句
+    Var *genNot(Var *val);   // 非
+    Var *genMinus(Var *val); // 负
+    Var *genIncL(Var *val);  // 左自加语句
+    Var *genDecL(Var *val);  // 右自减语句
+    Var *genLea(Var *val);   // 取址语句
+    Var *genPtr(Var *val);   // 指针取值语句
+    Var *genIncR(Var *val);  // 右自加语句
+    Var *genDecR(Var *val);  // 右自减
 
 public:
     GenIR(SymTab &tab); // 重置内部数据
@@ -37,6 +44,7 @@ public:
 
     // 产生符号和语句
     Var *genTwoOp(Var *lval, Tag opt, Var *rval); // 双目运算语句
+    Var *genOneOpLeft(Tag opt, Var *val);         // 左单目运算语句
 
     // 全局函数
     static string genLb();                       // 产生唯一的标签

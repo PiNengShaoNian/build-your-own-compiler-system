@@ -846,8 +846,7 @@ Var *Parser::factor()
     {
         Tag opt = lop();
         Var *v = factor();
-        // TODO
-        return NULL;
+        return ir.genOneOpLeft(opt, v); // 单目左操作
     }
     else
         return val();
