@@ -104,6 +104,26 @@ string GenIR::genLb()
 }
 
 /*
+    数组索引语句
+*/
+Var *GenIR::genArray(Var *array, Var *index)
+{
+    if (!array || !index)
+        return NULL;
+    if (array->isVoid() || index->isVoid())
+    {
+        SEMERROR(EXPR_IS_VOID); // void函数返回值不能出现在表达式中
+        return NULL;
+    }
+    if (array->isBase() || !index->isBase())
+    {
+        SEMERROR(ARR_TYPE_ERR);
+        return index;
+    }
+    return genPtr(genAdd(array, index));
+}
+
+/*
     指针取值语句
 */
 Var *GenIR::genPtr(Var *val)

@@ -944,7 +944,7 @@ Var *Parser::idexpr(string name)
         if (!match(RBRACK))
             recovery(LVAL_OPR, LBRACK_LOST, LBRACK_WRONG);
         Var *array = symtab.getVar(name); // 获取数组
-        // TODO
+        v = ir.genArray(array, index);    // 产生数组运算表达式
     }
     else if (match(LPAREN))
     {

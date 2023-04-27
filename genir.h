@@ -43,6 +43,7 @@ public:
     Var *genAssign(Var *val); // 变量拷贝赋值，用于指针左值引用和变量复制
 
     // 产生符号和语句
+    Var *genArray(Var *array, Var *index); // 数组索引语句
     Var *genTwoOp(Var *lval, Tag opt, Var *rval); // 双目运算语句
     Var *genOneOpLeft(Tag opt, Var *val);         // 左单目运算语句
     Var *genOneOpRight(Var *val, Tag opt);        // 右单目运算语句
