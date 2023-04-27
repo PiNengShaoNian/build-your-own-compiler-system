@@ -451,21 +451,25 @@ void Parser::dowhilestat()
 void Parser::forstat()
 {
     symtab.enter();
+    InterInst *_for, *_exit, *_step, *_block; // 标签
     match(KW_FOR);
     if (!match(LPAREN))
         recovery(TYPE_FIRST || EXPR_FIRST || F(SEMICON), LPAREN_LOST, LPAREN_WRONG);
-    forinit(); // 初始语句
-    // TODO
-    Var *cond = altexpr(); // 循环条件
+    forinit();                                      // 初始语句
+    ir.genForHead(_for, _exit);                     // for循环头部
+    Var *cond = altexpr();                          // 循环条件
+    ir.genForCondBegin(cond, _step, _block, _exit); // for循环条件开始部分
     if (!match(SEMICON))
         recovery(EXPR_FIRST, SEMICON_LOST, SEMICON_WRONG);
     altexpr();
     if (!match(RPAREN))
         recovery(F(LBRACE), RPAREN_LOST, RPAREN_WRONG);
+    ir.genForCondEnd(_for, _block); // for循环条件结束部分
     if (F(LBRACE))
         block();
     else
         statement();
+    ir.genForTail(_step, _exit); // for循环尾部
     symtab.leave();
 }
 

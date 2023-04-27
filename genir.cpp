@@ -660,6 +660,55 @@ void GenIR::genDoWhileTail(Var *cond, InterInst *_do, InterInst *_exit)
 }
 
 /*
+    产生for循环头部
+*/
+void GenIR::genForHead(InterInst *&_for, InterInst *&_exit)
+{
+    _for = new InterInst();  // 产生for标签
+    _exit = new InterInst(); // 产生exit标签
+    symtab.addInst(_for);
+}
+
+/*
+    产生for条件开始部分
+*/
+void GenIR::genForCondBegin(Var *cond, InterInst *&_step, InterInst *&_block, InterInst *_exit)
+{
+    _block = new InterInst(); // 产生block标签
+    _step = new InterInst();  // 产生循环动作标签
+    if (cond)
+    {
+        if (cond->isVoid())
+            cond = Var::getTrue(); // 处理空表达式
+        else if (cond->isRef())
+            cond = genAssign(cond); // for(*p),for(a[0])
+        symtab.addInst(new InterInst(OP_JF, _exit, cond));
+        symtab.addInst(new InterInst(OP_JMP, _block)); // 执行循环体
+    }
+    symtab.addInst(_step); // 添加循环动作标签
+    push(_step, _exit);
+}
+
+/*
+    产生for条件结束部分
+*/
+void GenIR::genForCondEnd(InterInst *_for, InterInst *_block)
+{
+    symtab.addInst(new InterInst(OP_JMP, _for)); // 继续循环
+    symtab.addInst(_block);                      // 添加循环体标签
+}
+
+/*
+    产生for尾部
+*/
+void GenIR::genForTail(InterInst *&_step, InterInst *&_exit)
+{
+    symtab.addInst(new InterInst(OP_JMP, _step)); // 跳转到循环动作
+    symtab.addInst(_exit);                        // 添加_exit标签
+    pop();                                        // 离开for
+}
+
+/*
     产生if头部
 */
 void GenIR::genIfHead(Var *cond, InterInst *&_else)
