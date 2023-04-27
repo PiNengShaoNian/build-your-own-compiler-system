@@ -400,16 +400,20 @@ void Parser::statement()
 void Parser::whilestat()
 {
     symtab.enter();
+    InterInst *_while, *_exit;      // 标签
+    ir.genWhileHead(_while, _exit); // while循环头部
     match(KW_WHILE);
     if (!match(LPAREN))
         recovery(EXPR_FIRST || F(RPAREN), LPAREN_LOST, LPAREN_WRONG);
     Var *cond = altexpr();
+    ir.genWhileCond(cond, _exit); // while条件
     if (!match(RPAREN))
         recovery(F(LBRACE), RPAREN_LOST, RPAREN_WRONG);
     if (F(LBRACE))
         block();
     else
         statement();
+    ir.genWhileTail(_while, _exit); // while尾部
     symtab.leave();
 }
 

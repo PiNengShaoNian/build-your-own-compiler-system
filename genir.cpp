@@ -595,6 +595,43 @@ Var *GenIR::genLea(Var *val)
 }
 
 /*
+    产生while循环头部
+*/
+void GenIR::genWhileHead(InterInst *&_while, InterInst *&_exit)
+{
+    _while = new InterInst(); // 产生while标签
+    symtab.addInst(_while);   // 添加while标签
+
+    _exit = new InterInst(); // 产生exit标签
+    push(_while, _exit);     // 进入while
+}
+
+/*
+    产生while条件
+*/
+void GenIR::genWhileCond(Var *cond, InterInst *_exit)
+{
+    if (cond)
+    {
+        if (cond->isVoid())
+            cond = Var::getTrue(); // 处理空表达式
+        else if (cond->isRef())
+            cond = genAssign(cond); // while(*p),while(a[0])
+        symtab.addInst(new InterInst(OP_JF, _exit, cond));
+    }
+}
+
+/*
+    产生do-while循环头部
+*/
+void GenIR::genWhileTail(InterInst *&_while, InterInst *&_exit)
+{
+    symtab.addInst(new InterInst(OP_JMP, _while)); // 添加jmp指令
+    symtab.addInst(_exit);                         // 添加exit标签
+    pop();                                         // 离开while
+}
+
+/*
     产生if头部
 */
 void GenIR::genIfHead(Var *cond, InterInst *&_else)

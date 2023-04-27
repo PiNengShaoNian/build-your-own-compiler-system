@@ -67,6 +67,14 @@ void Var::clear()
 }
 
 /*
+    获取true变量
+*/
+Var *Var::getTrue()
+{
+    return SymTab::one;
+}
+
+/*
     获取步长变量
 */
 Var *Var::getStep(Var *v)

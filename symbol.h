@@ -48,7 +48,8 @@ class Var
 public:
     // 特殊变量1,4-步长
     static Var *getStep(Var *v); // 获取步长变量
-    static Var *getVoid(); // 获取void特殊变量
+    static Var *getVoid();       // 获取void特殊变量
+    static Var *getTrue();       // 获取true变量
 
     // 构造函数
     Var(vector<int> &sp, bool ext, Tag t, bool ptr, string name, Var *init = NULL); // 变量

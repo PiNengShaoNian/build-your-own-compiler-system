@@ -59,6 +59,9 @@ public:
     Var *genOneOpRight(Var *val, Tag opt);            // 右单目运算语句
 
     // 产生复合语句
+    void genWhileHead(InterInst *&_while, InterInst *&_exit);     // while循环头部
+    void genWhileCond(Var *cond, InterInst *_exit);               // while条件
+    void genWhileTail(InterInst *&_while, InterInst *&_exit);     // while尾部
     void genIfHead(Var *cond, InterInst *&_else);                 // if头部
     void genIfTail(InterInst *&_else);                            // if尾部
     void genElseHead(InterInst *_else, InterInst *&_exit);        // else头部
