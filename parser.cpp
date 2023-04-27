@@ -369,13 +369,13 @@ void Parser::statement()
         switchstat();
         break;
     case KW_BREAK:
-        // TODO
+        ir.genBreak(); // 产生break语句
         move();
         if (!match(SEMICON))
             recovery(TYPE_FIRST || STATEMENT_FIRST || F(RBRACE), SEMICON_LOST, SEMICON_WRONG);
         break;
     case KW_CONTINUE:
-        // TODO
+        ir.genContinue(); // 产生continue语句
         move();
         if (!match(SEMICON))
             recovery(TYPE_FIRST || STATEMENT_FIRST || F(RBRACE), SEMICON_LOST, SEMICON_WRONG);

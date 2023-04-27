@@ -82,6 +82,8 @@ public:
     static bool typeCheck(Var *lval, Var *rval); // 检查类型是否可以转换
 
     // 产生特殊语句
+    void genBreak();                // 产生break语句
+    void genContinue();             // 产生continue语句
     void genReturn(Var *ret);       // 产生return语句
     void genFunHead(Fun *function); // 产生函数入口语句
     void genFunTail(Fun *function); // 产生函数出口语句

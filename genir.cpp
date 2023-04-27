@@ -803,6 +803,30 @@ void GenIR::pop()
 }
 
 /*
+    产生break语句
+*/
+void GenIR::genBreak()
+{
+    InterInst *tail = tails.back(); // 取出跳出标签
+    if (tail)
+        symtab.addInst(new InterInst(OP_JMP, tail)); // goto tail
+    else
+        SEMERROR(BREAK_ERR); // break不在循环或switch-case中
+}
+
+/*
+    产生continue语句
+*/
+void GenIR::genContinue()
+{
+    InterInst *head = heads.back(); // 取出跳出标签
+    if (head)
+        symtab.addInst(new InterInst(OP_JMP, head)); // goto head
+    else
+        SEMERROR(CONTINUE_ERR); // continue不在循环中
+}
+
+/*
     产生return语句
 */
 void GenIR::genReturn(Var *ret)
