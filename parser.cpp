@@ -483,11 +483,13 @@ void Parser::forinit()
 void Parser::ifstat()
 {
     symtab.enter();
+    InterInst *_else, *_exit; // 标签
     match(KW_IF);
     if (!match(LPAREN))
         recovery(EXPR_FIRST, LPAREN_LOST, LPAREN_WRONG);
     Var *cond = expr();
-    // TODO
+    // if头部
+    ir.genIfHead(cond, _else);
     if (!match(RPAREN))
         recovery(F(LBRACE), RPAREN_LOST, RPAREN_WRONG);
     if (F(LBRACE))
@@ -496,13 +498,12 @@ void Parser::ifstat()
         statement();
     symtab.leave();
 
-    // TODO
-
+    ir.genElseHead(_else, _exit); // else头部
     if (F(KW_ELSE))
     { // 有else
         elsestat();
     }
-    // TODO
+    ir.genElseTail(_exit); // else尾部
     // 不对if-else的else部分优化，妨碍冗余删除算法的效果
     //  if(F(KW_ELSE)){//有else
     //  	ir.genElseHead(_else,_exit);//else头部

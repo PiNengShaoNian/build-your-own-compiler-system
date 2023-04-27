@@ -595,6 +595,46 @@ Var *GenIR::genLea(Var *val)
 }
 
 /*
+    产生if头部
+*/
+void GenIR::genIfHead(Var *cond, InterInst *&_else)
+{
+    _else = new InterInst(); // 产生else标签
+    if (cond)
+    {
+        if (cond->isRef())
+            cond = genAssign(cond); // if(*p),if(a[0])
+        symtab.addInst(new InterInst(OP_JF, _else, cond));
+    }
+}
+
+/*
+    产生if尾部
+*/
+void GenIR::genIfTail(InterInst *&_else)
+{
+    symtab.addInst(_else);
+}
+
+/*
+    产生else头部
+*/
+void GenIR::genElseHead(InterInst *_else, InterInst *&_exit)
+{
+    _exit = new InterInst(); // 产生exit标签
+    symtab.addInst(new InterInst(OP_JMP, _exit));
+    symtab.addInst(_else);
+}
+
+/*
+    产生else尾部
+*/
+void GenIR::genElseTail(InterInst *&_exit)
+{
+    symtab.addInst(_exit);
+}
+
+/*
     产生return语句
 */
 void GenIR::genReturn(Var *ret)

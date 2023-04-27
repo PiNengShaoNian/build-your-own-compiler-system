@@ -52,6 +52,12 @@ public:
     Var *genOneOpLeft(Tag opt, Var *val);             // 左单目运算语句
     Var *genOneOpRight(Var *val, Tag opt);            // 右单目运算语句
 
+    // 产生复合语句
+    void genIfHead(Var *cond, InterInst *&_else);          // if头部
+    void genIfTail(InterInst *&_else);                     // if尾部
+    void genElseHead(InterInst *_else, InterInst *&_exit); // else头部
+    void genElseTail(InterInst *&_exit);                   // else尾部
+
     // 全局函数
     static string genLb();                       // 产生唯一的标签
     static bool typeCheck(Var *lval, Var *rval); // 检查类型是否可以转换
