@@ -635,6 +635,60 @@ void GenIR::genElseTail(InterInst *&_exit)
 }
 
 /*
+    产生switch头部
+*/
+void GenIR::genSwitchHead(InterInst *&_exit)
+{
+    _exit = new InterInst(); // 产生exit标签
+    push(NULL, _exit);       // 进入switch，不允许continue，因此head=NULL
+}
+
+/*
+    产生switch尾部
+*/
+void GenIR::genSwitchTail(InterInst *_exit)
+{
+    symtab.addInst(_exit); // 添加exit标签
+    pop();
+}
+
+/*
+    产生case头部
+*/
+void GenIR::genCaseHead(Var *cond, Var *lb, InterInst *&_case_exit)
+{
+    _case_exit = new InterInst(); // 产生case的exit标签
+    if (lb)                       // if(cond!=lb)goto _case_exit
+        symtab.addInst(new InterInst(OP_JNE, _case_exit, cond, lb));
+}
+
+/*
+    产生case尾部
+*/
+void GenIR::genCaseTail(InterInst *_case_exit)
+{
+    symtab.addInst(_case_exit); // 添加case的exit标签
+}
+
+/*
+    添加一个作用域
+*/
+void GenIR::push(InterInst *head, InterInst *tail)
+{
+    heads.push_back(head);
+    tails.push_back(tail);
+}
+
+/*
+    删除一个作用域
+*/
+void GenIR::pop()
+{
+    heads.pop_back();
+    tails.pop_back();
+}
+
+/*
     产生return语句
 */
 void GenIR::genReturn(Var *ret)

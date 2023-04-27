@@ -537,11 +537,14 @@ void Parser::elsestat()
 void Parser::switchstat()
 {
     symtab.enter();
+    InterInst *_exit;        // 标签
+    ir.genSwitchHead(_exit); // switch头部
     match(KW_SWITCH);
     if (!match(LPAREN))
         recovery(EXPR_FIRST, LPAREN_LOST, LPAREN_WRONG);
     Var *cond = expr();
-    // TODO
+    if (cond->isRef())
+        cond = ir.genAssign(cond); // switch(*p),switch(a[0])
     if (!match(RPAREN))
         recovery(F(LBRACE), RPAREN_LOST, RPAREN_WRONG);
     if (!match(LBRACE))
@@ -549,6 +552,7 @@ void Parser::switchstat()
     casestat(cond);
     if (!match(RBRACE))
         recovery(TYPE_FIRST || STATEMENT_FIRST, RBRACE_LOST, RBRACE_WRONG);
+    ir.genSwitchTail(_exit); // switch尾部
     symtab.leave();
 }
 
@@ -560,12 +564,15 @@ void Parser::casestat(Var *cond)
 {
     if (match(KW_CASE))
     {
+        InterInst *_case_exit; // 标签
         Var *lb = caselabel();
+        ir.genCaseHead(cond, lb, _case_exit); // case头部
         if (!match(COLON))
             recovery(TYPE_FIRST || STATEMENT_FIRST, COLON_LOST, COLON_WRONG);
         symtab.enter();
         subprogram();
         symtab.leave();
+        ir.genCaseTail(_case_exit); // case尾部
         casestat(cond);
     }
     else if (match(KW_DEFAULT))

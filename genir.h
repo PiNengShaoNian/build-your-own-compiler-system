@@ -10,6 +10,12 @@ class GenIR
 
     SymTab &symtab; // 符号表
 
+    // break continue辅助标签列表
+    vector<InterInst *> heads;
+    vector<InterInst *> tails;
+    void push(InterInst *head, InterInst *tail); // 添加一个作用域
+    void pop();                                  // 删除一个作用域
+
     // 函数调用
     void genPara(Var *arg); // 参数传递语句
 
@@ -53,10 +59,14 @@ public:
     Var *genOneOpRight(Var *val, Tag opt);            // 右单目运算语句
 
     // 产生复合语句
-    void genIfHead(Var *cond, InterInst *&_else);          // if头部
-    void genIfTail(InterInst *&_else);                     // if尾部
-    void genElseHead(InterInst *_else, InterInst *&_exit); // else头部
-    void genElseTail(InterInst *&_exit);                   // else尾部
+    void genIfHead(Var *cond, InterInst *&_else);                 // if头部
+    void genIfTail(InterInst *&_else);                            // if尾部
+    void genElseHead(InterInst *_else, InterInst *&_exit);        // else头部
+    void genElseTail(InterInst *&_exit);                          // else尾部
+    void genSwitchHead(InterInst *&_exit);                        // switch头部
+    void genSwitchTail(InterInst *_exit);                         // switch尾部
+    void genCaseHead(Var *cond, Var *lb, InterInst *&_case_exit); // case头部
+    void genCaseTail(InterInst *_case_exit);                      // case尾部
 
     // 全局函数
     static string genLb();                       // 产生唯一的标签
