@@ -871,7 +871,7 @@ Var *Parser::val()
     if (F(INC) _(DEC))
     {
         Tag opt = rop();
-        // TODO
+        v = ir.genOneOpRight(v, opt);
     }
     return v;
 }

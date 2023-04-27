@@ -45,6 +45,7 @@ public:
     // 产生符号和语句
     Var *genTwoOp(Var *lval, Tag opt, Var *rval); // 双目运算语句
     Var *genOneOpLeft(Tag opt, Var *val);         // 左单目运算语句
+    Var *genOneOpRight(Var *val, Tag opt);        // 右单目运算语句
 
     // 全局函数
     static string genLb();                       // 产生唯一的标签

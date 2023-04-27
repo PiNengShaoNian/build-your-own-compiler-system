@@ -122,6 +122,50 @@ Var *GenIR::genPtr(Var *val)
 }
 
 /*
+    右单目运算语句
+*/
+Var *GenIR::genOneOpRight(Var *val, Tag opt)
+{
+    if (!val)
+        return NULL;
+    if (val->isVoid())
+    {
+        SEMERROR(EXPR_IS_VOID); // void函数返回值不能出现在表达式中
+        return NULL;
+    }
+    if (!val->getLeft())
+    {
+        SEMERROR(EXPR_NOT_LEFT_VAL);
+        return val;
+    }
+    if (opt == INC)
+        return genIncR(val); // 右自加语句
+    if (opt == DEC)
+        return genDecR(val); // 右自减语句
+    return val;
+}
+
+/*
+    右自加
+*/
+Var *GenIR::genIncR(Var *val)
+{
+    Var *tmp = genAssign(val);
+    symtab.addInst(new InterInst(OP_ADD, val, val, Var::getStep(val))); // 中间代码val++
+    return tmp;
+}
+
+/*
+    右自减
+*/
+Var *GenIR::genDecR(Var *val)
+{
+    Var *tmp = genAssign(val);                                          // 拷贝
+    symtab.addInst(new InterInst(OP_SUB, val, val, Var::getStep(val))); // val--
+    return tmp;
+}
+
+/*
     赋值语句
 */
 Var *GenIR::genAssign(Var *lval, Var *rval)
