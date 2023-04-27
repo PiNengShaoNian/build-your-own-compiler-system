@@ -67,6 +67,33 @@ void Var::clear()
 }
 
 /*
+    获取步长变量
+*/
+Var *Var::getStep(Var *v)
+{
+    if (v->isBase())
+        return SymTab::one;
+    else if (v->type == KW_CHAR)
+        return SymTab::one;
+    else if (v->type == KW_INT)
+        return SymTab::four;
+    else
+        return NULL;
+}
+
+/*
+    临时变量
+*/
+Var::Var(vector<int> &sp, Tag t, bool ptr)
+{
+    clear();
+    scopePath = sp; // 初始化路径
+    setType(t);
+    setPtr(ptr);
+    setName("");
+    setLeft(false);
+}
+/*
     变量，指针
 */
 Var::Var(vector<int> &sp, bool ext, Tag t, bool ptr, string name, Var *init)
@@ -214,6 +241,14 @@ vector<int> &Var::getPath()
 }
 
 /*
+    设置指针变量
+*/
+void Var::setPointer(Var *p)
+{
+    ptr = p;
+}
+
+/*
     获取指针变量
 */
 Var *Var::getPointer()
@@ -222,11 +257,27 @@ Var *Var::getPointer()
 }
 
 /*
+    获取指针
+*/
+bool Var::getPtr()
+{
+    return isPtr;
+}
+
+/*
     获取名字
 */
 string Var::getName()
 {
     return name;
+}
+
+/*
+    获取数组
+*/
+bool Var::getArray()
+{
+    return isArray;
 }
 
 /*******************************************************************************

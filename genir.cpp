@@ -21,6 +21,61 @@ GenIR::GenIR(SymTab &tab) : symtab(tab)
 }
 
 /*
+    双目运算语句
+*/
+Var *GenIR::genTwoOp(Var *lval, Tag opt, Var *rval)
+{
+    if (!lval || !rval)
+        return NULL;
+    if (lval->isVoid() || rval->isVoid())
+    {
+        SEMERROR(EXPR_IS_VOID); // void函数返回值不能出现在表达式中
+        return NULL;
+    }
+    // 赋值单独处理
+    if (opt == ASSIGN)
+        return genAssign(lval, rval); // 赋值
+
+    // 先处理(*p)变量
+    if (lval->isRef())
+        lval = genAssign(lval);
+    if (rval->isRef())
+        rval = genAssign(rval);
+    if (opt == OR)
+        return genOr(lval, rval); // 或
+    if (opt == AND)
+        return genAnd(lval, rval); // 与
+    if (opt == EQU)
+        return genEqu(lval, rval); // 等于
+    if (opt == NEQU)
+        return genNequ(lval, rval); // 不等于
+    if (opt == ADD)
+        return genAdd(lval, rval); // 加
+    if (opt == SUB)
+        return genSub(lval, rval); // 减
+    if (!lval->isBase() || !rval->isBase())
+    {
+        SEMERROR(EXPR_NOT_BASE); // 不是基本类型
+        return lval;
+    }
+    if (opt == GT)
+        return genGt(lval, rval); // 大于
+    if (opt == GE)
+        return genGe(lval, rval); // 大于等于
+    if (opt == LT)
+        return genLt(lval, rval); // 小于
+    if (opt == LE)
+        return genLe(lval, rval); // 小于等于
+    if (opt == MUL)
+        return genMul(lval, rval); // 乘
+    if (opt == DIV)
+        return genDiv(lval, rval); // 除
+    if (opt == MOD)
+        return genMod(lval, rval); // 取模
+    return lval;
+}
+
+/*
     检查类型是否可以转换
 */
 bool GenIR::typeCheck(Var *lval, Var *rval)
@@ -49,6 +104,70 @@ string GenIR::genLb()
 }
 
 /*
+    指针取值语句
+*/
+Var *GenIR::genPtr(Var *val)
+{
+    if (val->isBase())
+    {
+        SEMERROR(EXPR_IS_BASE); // 基本类型不能取值
+        return val;
+    }
+    Var *tmp = new Var(symtab.getScopePath(), val->getType(), false);
+    tmp->setLeft(true);   // 指针运算结果为左值
+    tmp->setPointer(val); // 设置指针变量
+    symtab.addVar(tmp);   // 产生表达式需要根据使用者判断，推迟！
+
+    return tmp;
+}
+
+/*
+    赋值语句
+*/
+Var *GenIR::genAssign(Var *lval, Var *rval)
+{
+    // 被赋值对象必须是左值
+    if (!lval->getLeft())
+    {
+        SEMERROR(EXPR_NOT_LEFT_VAL); // 左值错误
+        return rval;
+    }
+    // 类型检查
+    if (!typeCheck(lval, rval))
+    {
+        SEMERROR(ASSIGN_TYPE_ERR); // 赋值类型不匹配
+        return rval;
+    }
+    // 考虑右值(*p)
+    if (rval->isRef())
+    {
+        if (!lval->isRef())
+        {
+            // 中间代码lval=*(rval->ptr)
+            symtab.addInst(new InterInst(OP_GET, lval, rval->getPointer()));
+            return lval;
+        }
+        else
+        {
+            // 中间代码*(lval->ptr)=*(rval->ptr),先处理右值
+            rval = genAssign(rval);
+        }
+    }
+    // 赋值运算
+    if (lval->isRef())
+    {
+        // 中间代码*(lval->ptr)=rval
+        symtab.addInst(new InterInst(OP_SET, rval, lval->getPointer()));
+    }
+    else
+    {
+        // 中间代码lval=rval
+        symtab.addInst(new InterInst(OP_AS, lval, rval));
+    }
+    return lval;
+}
+
+/*
     拷贝赋值语句,处理取*p值的情况
 */
 Var *GenIR::genAssign(Var *val)
@@ -64,6 +183,187 @@ Var *GenIR::genAssign(Var *val)
     {
         symtab.addInst(new InterInst(OP_AS, tmp, val)); // 中间代码tmp=val
     }
+    return tmp;
+}
+
+/*
+    或运算语句
+*/
+Var *GenIR::genOr(Var *lval, Var *rval)
+{
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_OR, tmp, lval, rval)); // 中间代码tmp=lval||rval
+    return tmp;
+}
+
+/*
+    与运算语句
+*/
+Var *GenIR::genAnd(Var *lval, Var *rval)
+{
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_AND, tmp, lval, rval)); // 中间代码tmp=lval&&rval
+    return tmp;
+}
+
+/*
+    大于语句
+*/
+Var *GenIR::genGt(Var *lval, Var *rval)
+{
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_GT, tmp, lval, rval)); // 中间代码tmp=lval>rval
+    return tmp;
+}
+
+/*
+    大于等于语句
+*/
+Var *GenIR::genGe(Var *lval, Var *rval)
+{
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_GE, tmp, lval, rval)); // 中间代码tmp=lval>=rval
+    return tmp;
+}
+
+/*
+    小于语句
+*/
+Var *GenIR::genLt(Var *lval, Var *rval)
+{
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_LT, tmp, lval, rval)); // 中间代码tmp=lval<rval
+    return tmp;
+}
+
+/*
+    小于等于语句
+*/
+Var *GenIR::genLe(Var *lval, Var *rval)
+{
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_LE, tmp, lval, rval)); // 中间代码tmp=lval<=rval
+    return tmp;
+}
+
+/*
+    等于语句
+*/
+Var *GenIR::genEqu(Var *lval, Var *rval)
+{
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_EQU, tmp, lval, rval)); // 中间代码tmp=lval==rval
+    return tmp;
+}
+
+/*
+    不等于语句
+*/
+Var *GenIR::genNequ(Var *lval, Var *rval)
+{
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_NE, tmp, lval, rval)); // 中间代码tmp=lval!=rval
+    return tmp;
+}
+
+/*
+    加法语句
+*/
+Var *GenIR::genAdd(Var *lval, Var *rval)
+{
+    Var *tmp = NULL;
+    // 指针和数组只能和基本类型相加
+    if ((lval->getArray() || lval->getPtr()) && rval->isBase())
+    {
+        tmp = new Var(symtab.getScopePath(), lval);
+        rval = genMul(rval, Var::getStep(lval));
+    }
+    else if (lval->isBase() && (rval->getArray() || rval->getPtr()))
+    {
+        tmp = new Var(symtab.getScopePath(), rval);
+        lval = genMul(lval, Var::getStep(rval));
+    }
+    else if (lval->isBase() && rval->isBase()) // 基本类型
+    {
+        tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    }
+    else
+    {
+        SEMERROR(EXPR_NOT_BASE); // 加法类型不兼容
+        return lval;
+    }
+    // 加法命令
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_ADD, tmp, lval, rval)); // 中间代码tmp=lval+rval
+    return tmp;
+}
+
+/*
+    减法语句
+*/
+Var *GenIR::genSub(Var *lval, Var *rval)
+{
+    Var *tmp = NULL;
+    if (!rval->isBase())
+    {
+        SEMERROR(EXPR_NOT_BASE); // 类型不兼容,减数不是基本类型
+        return lval;
+    }
+
+    // 指针和数组
+    if ((lval->getArray() || lval->getPtr()))
+    {
+        tmp = new Var(symtab.getScopePath(), lval);
+        rval = genMul(rval, Var::getStep(lval));
+    }
+    else // 基本类型
+    {
+        tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    }
+    // 减法命令
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_SUB, tmp, lval, rval)); // 中间代码tmp=lval-rval
+    return tmp;
+}
+
+/*
+    乘法语句
+*/
+Var *GenIR::genMul(Var *lval, Var *rval)
+{
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_MUL, tmp, lval, rval)); // 中间代码tmp=lval*rval
+    return tmp;
+}
+
+/*
+    除法语句
+*/
+Var *GenIR::genDiv(Var *lval, Var *rval)
+{
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_DIV, tmp, lval, rval)); // 中间代码tmp=lval/rval
+    return tmp;
+}
+
+/*
+    模语句
+*/
+Var *GenIR::genMod(Var *lval, Var *rval)
+{
+    Var *tmp = new Var(symtab.getScopePath(), KW_INT, false); // 基本类型
+    symtab.addVar(tmp);
+    symtab.addInst(new InterInst(OP_MOD, tmp, lval, rval)); // 中间代码tmp=lval%rval
     return tmp;
 }
 

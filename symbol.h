@@ -47,6 +47,7 @@ class Var
 
 public:
     // 特殊变量1,4-步长
+    static Var *getStep(Var *v); // 获取步长变量
     static Var *getVoid(); // 获取void特殊变量
 
     // 构造函数
@@ -59,15 +60,18 @@ public:
     Var();                                                                          // void变量
 
     // 外界调用接口
-    vector<int> &getPath(); // 获取scopePath
-    string getName();       // 获取名字
-    Tag getType();          // 获取类型
-    void setLeft(bool lf);  // 设置变量的左值属性
-    bool getLeft();         // 获取左值属性
-    Var *getPointer();      // 获取指针
-    bool isBase(); // 是基本类型
-    bool isVoid(); // 是void——唯一静态存储区变量getVoid()使用
-    bool isRef();  // 是引用类型
+    vector<int> &getPath();  // 获取scopePath
+    string getName();        // 获取名字
+    Tag getType();           // 获取类型
+    void setLeft(bool lf);   // 设置变量的左值属性
+    bool getLeft();          // 获取左值属性
+    bool getArray();         // 获取数组
+    bool getPtr();           // 获取指针
+    Var *getPointer();       // 获取指针
+    void setPointer(Var *p); // 设置指针变量
+    bool isBase();           // 是基本类型
+    bool isVoid();           // 是void——唯一静态存储区变量getVoid()使用
+    bool isRef();            // 是引用类型
 };
 
 /*******************************************************************************

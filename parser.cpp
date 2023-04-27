@@ -683,8 +683,8 @@ Var *Parser::asstail(Var *lval)
     if (match(ASSIGN))
     {
         Var *rval = assexpr();
-        // TODO
-        return asstail(NULL);
+        Var *result = ir.genTwoOp(lval, ASSIGN, rval);
+        return asstail(result);
     }
     return lval;
 }
@@ -706,8 +706,8 @@ Var *Parser::ortail(Var *lval)
     if (match(OR))
     {
         Var *rval = andexpr();
-        // TODO
-        return ortail(NULL);
+        Var *result = ir.genTwoOp(lval, OR, rval);
+        return ortail(result);
     }
     return lval;
 }
@@ -729,8 +729,8 @@ Var *Parser::andtail(Var *lval)
     if (match(AND))
     {
         Var *rval = cmpexpr();
-        // TODO
-        return andtail(NULL);
+        Var *result = ir.genTwoOp(lval, AND, rval);
+        return andtail(result);
     }
     return lval;
 }
@@ -753,8 +753,8 @@ Var *Parser::cmptail(Var *lval)
     {
         Tag opt = cmps();
         Var *rval = aloexpr();
-        // TODO
-        return cmptail(NULL);
+        Var *result = ir.genTwoOp(lval, opt, rval);
+        return cmptail(result);
     }
     return lval;
 }
@@ -787,7 +787,7 @@ Var *Parser::alotail(Var *lval)
     {
         Tag opt = adds();
         Var *rval = item();
-        // TODO
+        Var *result = ir.genTwoOp(lval, opt, rval); // 双目运算
         return alotail(NULL);
     }
     return lval;
@@ -821,8 +821,8 @@ Var *Parser::itemtail(Var *lval)
     {
         Tag opt = muls();
         Var *rval = factor();
-        // TODO
-        return itemtail(NULL);
+        Var *result = ir.genTwoOp(lval, opt, rval); // 双目运算
+        return itemtail(result);
     }
     return lval;
 }
