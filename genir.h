@@ -59,17 +59,19 @@ public:
     Var *genOneOpRight(Var *val, Tag opt);            // 右单目运算语句
 
     // 产生复合语句
-    void genWhileHead(InterInst *&_while, InterInst *&_exit);     // while循环头部
-    void genWhileCond(Var *cond, InterInst *_exit);               // while条件
-    void genWhileTail(InterInst *&_while, InterInst *&_exit);     // while尾部
-    void genIfHead(Var *cond, InterInst *&_else);                 // if头部
-    void genIfTail(InterInst *&_else);                            // if尾部
-    void genElseHead(InterInst *_else, InterInst *&_exit);        // else头部
-    void genElseTail(InterInst *&_exit);                          // else尾部
-    void genSwitchHead(InterInst *&_exit);                        // switch头部
-    void genSwitchTail(InterInst *_exit);                         // switch尾部
-    void genCaseHead(Var *cond, Var *lb, InterInst *&_case_exit); // case头部
-    void genCaseTail(InterInst *_case_exit);                      // case尾部
+    void genWhileHead(InterInst *&_while, InterInst *&_exit);         // while循环头部
+    void genWhileCond(Var *cond, InterInst *_exit);                   // while条件
+    void genWhileTail(InterInst *&_while, InterInst *&_exit);         // while尾部
+    void genDoWhileHead(InterInst *&_do, InterInst *&_exit);          // do-while头部
+    void genDoWhileTail(Var *cond, InterInst *_do, InterInst *_exit); // do-while尾部
+    void genIfHead(Var *cond, InterInst *&_else);                     // if头部
+    void genIfTail(InterInst *&_else);                                // if尾部
+    void genElseHead(InterInst *_else, InterInst *&_exit);            // else头部
+    void genElseTail(InterInst *&_exit);                              // else尾部
+    void genSwitchHead(InterInst *&_exit);                            // switch头部
+    void genSwitchTail(InterInst *_exit);                             // switch尾部
+    void genCaseHead(Var *cond, Var *lb, InterInst *&_case_exit);     // case头部
+    void genCaseTail(InterInst *_case_exit);                          // case尾部
 
     // 全局函数
     static string genLb();                       // 产生唯一的标签

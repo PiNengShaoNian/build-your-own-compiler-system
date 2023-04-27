@@ -632,6 +632,34 @@ void GenIR::genWhileTail(InterInst *&_while, InterInst *&_exit)
 }
 
 /*
+    产生do-while循环头部
+*/
+void GenIR::genDoWhileHead(InterInst *&_do, InterInst *&_exit)
+{
+    _do = new InterInst();   // 产生do标签
+    _exit = new InterInst(); // 产生exit标签
+    symtab.addInst(_do);
+    push(_do, _exit); // 进入do-while
+}
+
+/*
+    产生do-while尾部
+*/
+void GenIR::genDoWhileTail(Var *cond, InterInst *_do, InterInst *_exit)
+{
+    if (cond)
+    {
+        if (cond->isVoid())
+            cond = Var::getTrue(); // 处理空表达式
+        else if (cond->isRef())
+            cond = genAssign(cond); // while(*p),while(a[0])
+        symtab.addInst(new InterInst(OP_JT, _do, cond));
+    }
+    symtab.addInst(_exit);
+    pop();
+}
+
+/*
     产生if头部
 */
 void GenIR::genIfHead(Var *cond, InterInst *&_else)

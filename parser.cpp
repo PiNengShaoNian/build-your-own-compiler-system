@@ -424,6 +424,8 @@ void Parser::whilestat()
 void Parser::dowhilestat()
 {
     symtab.enter();
+    InterInst *_do, *_exit;        // 标签
+    ir.genDoWhileHead(_do, _exit); // do-while头部
     match(KW_DO);
     if (F(LBRACE))
         block();
@@ -439,6 +441,7 @@ void Parser::dowhilestat()
         recovery(F(SEMICON), RPAREN_LOST, RPAREN_WRONG);
     if (!match(SEMICON))
         recovery(TYPE_FIRST || STATEMENT_FIRST || F(RBRACE), SEMICON_LOST, SEMICON_WRONG);
+    ir.genDoWhileTail(cond, _do, _exit); // do-while尾部
 }
 
 /*
