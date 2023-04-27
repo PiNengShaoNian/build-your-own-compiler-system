@@ -10,6 +10,9 @@ class GenIR
 
     SymTab &symtab; // 符号表
 
+    // 函数调用
+    void genPara(Var *arg); // 参数传递语句
+
     // 双目运算
     Var *genAssign(Var *lval, Var *rval); // 赋值语句
 
@@ -43,10 +46,11 @@ public:
     Var *genAssign(Var *val); // 变量拷贝赋值，用于指针左值引用和变量复制
 
     // 产生符号和语句
-    Var *genArray(Var *array, Var *index); // 数组索引语句
-    Var *genTwoOp(Var *lval, Tag opt, Var *rval); // 双目运算语句
-    Var *genOneOpLeft(Tag opt, Var *val);         // 左单目运算语句
-    Var *genOneOpRight(Var *val, Tag opt);        // 右单目运算语句
+    Var *genArray(Var *array, Var *index);            // 数组索引语句
+    Var *genCall(Fun *function, vector<Var *> &args); // 函数调用语句
+    Var *genTwoOp(Var *lval, Tag opt, Var *rval);     // 双目运算语句
+    Var *genOneOpLeft(Tag opt, Var *val);             // 左单目运算语句
+    Var *genOneOpRight(Var *val, Tag opt);            // 右单目运算语句
 
     // 全局函数
     static string genLb();                       // 产生唯一的标签

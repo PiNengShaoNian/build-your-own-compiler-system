@@ -43,6 +43,18 @@ InterInst::InterInst(Operator op, Fun *fun, Var *rs)
 }
 
 /*
+    参数进栈指令
+*/
+InterInst::InterInst(Operator op, Var *arg1)
+{
+    init();
+    this->op = op;
+    this->result = NULL;
+    this->arg1 = arg1;
+    this->arg2 = NULL;
+}
+
+/*
     产生唯一标号
 */
 InterInst::InterInst()

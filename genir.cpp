@@ -21,6 +21,46 @@ GenIR::GenIR(SymTab &tab) : symtab(tab)
 }
 
 /*
+    实际参数传递
+*/
+void GenIR::genPara(Var *arg)
+{
+    if (arg->isRef())
+        arg = genAssign(arg);
+
+    InterInst *argInst = new InterInst(OP_ARG, arg); // push arg!!!
+
+    symtab.addInst(argInst);
+}
+
+/*
+    函数调用语句
+*/
+Var *GenIR::genCall(Fun *function, vector<Var *> &args)
+{
+    if (!function)
+        return NULL;                           // 只要function有效，则参数类型一定检查通过
+    for (int i = args.size() - 1; i >= 0; i--) // 逆向传递实际参数
+    {
+        genPara(args[i]);
+    }
+    if (function->getType() == KW_VOID)
+    {
+        // 中间代码fun()
+        symtab.addInst(new InterInst(OP_PROC, function));
+        return Var::getVoid();
+    }
+    else
+    {
+        Var *ret = new Var(symtab.getScopePath(), function->getType(), false);
+        // 中间代码ret=fun()
+        symtab.addInst(new InterInst(OP_CALL, function, ret));
+        symtab.addVar(ret); // 将返回值声明延迟到函数调用之后！！！
+        return ret;
+    }
+}
+
+/*
     双目运算语句
 */
 Var *GenIR::genTwoOp(Var *lval, Tag opt, Var *rval)

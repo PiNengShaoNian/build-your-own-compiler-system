@@ -953,7 +953,7 @@ Var *Parser::idexpr(string name)
         if (!match(RPAREN))
             recovery(RVAL_OPR, RPAREN_LOST, RPAREN_WRONG);
         Fun *function = symtab.getFun(name, args); // 获取函数
-        // TODO
+        v = ir.genCall(function, args);            // 产生函数调用代码
     }
     else
         v = symtab.getVar(name); // 获取变量
