@@ -10,6 +10,10 @@ public:
     static int errorNum; // 错误个数
     static int warnNum;  // 警告个数
 
+    // 外界接口
+    static int getErrorNum();
+    static int getWarnNum();
+
     // 错误接口
     static void lexError(int code);                   // 打印词法错误
     static void synError(int code, Token *t);         // 打印语法错误

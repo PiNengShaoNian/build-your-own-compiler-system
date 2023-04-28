@@ -65,4 +65,5 @@ public:
     void setIr(GenIR *ir);       // 设置中间代码生成器
     vector<int> &getScopePath(); // 获取scopePath
     Fun *getCurFun();            // 获取当前分析的函数
+    void toString();             // 输出信息
 };

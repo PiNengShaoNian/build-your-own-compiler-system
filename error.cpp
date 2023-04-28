@@ -113,3 +113,19 @@ void Error::semWarn(int code, string name)
     printf("%s<第%d行> 语义警告 : %s %s.\n", scanner->getFile(), scanner->getLine(),
            name.c_str(), semWarnTable[code]);
 }
+
+/*
+    获取错误个数
+*/
+int Error::getErrorNum()
+{
+    return errorNum;
+}
+
+/*
+    获取警告个数
+*/
+int Error::getWarnNum()
+{
+    return warnNum;
+}

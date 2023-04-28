@@ -202,6 +202,8 @@ enum SemWarn
     FUN_RET_CONFLICT  // 函数返回值类型冲突
 };
 
+extern const char *tokenName[];
+
 class Token;
 class Scanner;
 class Lexer;

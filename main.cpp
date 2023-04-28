@@ -29,6 +29,12 @@ int main(int argc, char *argv[])
 
         parser.analyse();
 
+        // 报错
+        if (Error::getErrorNum() + Error::getWarnNum())
+            return -1; // 出错不进行后续操作
+
+        symTab.toString(); // 输出符号表
+
         assert(lexer.tokenize()->tag == END);
     }
 }

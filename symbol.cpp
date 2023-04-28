@@ -1,3 +1,4 @@
+#include "token.h"
 #include "symbol.h"
 #include "error.h"
 #include "token.h"
@@ -265,6 +266,14 @@ Var *Var::getPointer()
 }
 
 /*
+    获取字符串常量内容
+*/
+string Var::getStrVal()
+{
+    return strVal;
+}
+
+/*
     获取指针
 */
 bool Var::getPtr()
@@ -371,6 +380,64 @@ bool Var::getLeft()
 }
 
 /*
+    获取常量值
+*/
+int Var::getVal()
+{
+    return intVal;
+}
+
+/*
+    输出变量信息
+*/
+void Var::toString()
+{
+    if (externed)
+        printf("externed ");
+    // 输出type
+    printf("%s", tokenName[type]);
+    // 输出指针
+    if (isPtr)
+        printf("*");
+    // 输出名字
+    printf(" %s", name.c_str());
+    // 输出数组
+    if (isArray)
+        printf("[%d]", arraySize);
+    // 输出初始值
+    if (inited)
+    {
+        printf(" = ");
+        switch (type)
+        {
+        case KW_INT:
+            printf("%d", intVal);
+            break;
+        case KW_CHAR:
+            if (isPtr)
+                printf("<%s>", ptrVal.c_str());
+            else
+                printf("%c", charVal);
+            break;
+        }
+    }
+    printf("; size=%d scope=\"", size);
+    for (int i = 0; i < scopePath.size(); i++)
+    {
+        printf("/%d", scopePath[i]);
+    }
+    printf("\" ");
+    if (offset > 0)
+        printf("addr=[ebp+%d]", offset);
+    else if (offset < 0)
+        printf("addr=[ebp%d]", offset);
+    else if (name[0] != '<')
+        printf("addr=<%s>", name.c_str());
+    else
+        printf("value='%d'", getVal());
+}
+
+/*
     声明定义匹配
 */
 #define SEMWARN(code, name) Error::semWarn(code, name)
@@ -468,4 +535,30 @@ bool Var::isVoid()
 bool Var::isRef()
 {
     return !!ptr;
+}
+
+/*
+    输出信息
+*/
+void Fun::toString()
+{
+    // 输出type
+    printf("%s", tokenName[type]);
+    // 输出名字
+    printf(" %s", name.c_str());
+    printf("(");
+    for (int i = 0; i < paraVar.size(); i++)
+    {
+        printf("<%s>", paraVar[i]->getName().c_str());
+        if (i != paraVar.size() - 1)
+            printf(",");
+    }
+    printf(")");
+    if (externed)
+        printf(";\n");
+    else
+    {
+        printf(":\n");
+        printf("\t\tmaxDepth=%d\n", maxDepth);
+    }
 }

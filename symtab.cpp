@@ -298,3 +298,32 @@ Tag Var::getType()
 {
     return type;
 }
+
+/*
+    输出符号表信息
+*/
+void SymTab::toString()
+{
+    printf("----------变量表----------\n");
+    for (int i = 0; i < varList.size(); i++)
+    {
+        string varName = varList[i];
+        vector<Var *> &list = *varTab[varName];
+        printf("%s:\n", varName.c_str());
+        for (int j = 0; j < list.size(); j++)
+        {
+            printf("\t");
+            list[j]->toString();
+            printf("\n");
+        }
+    }
+    printf("----------串表-----------\n");
+    hash_map<string, Var *, string_hash>::iterator strIt, strEnd = strTab.end();
+    for (strIt = strTab.begin(); strIt != strEnd; ++strIt)
+        printf("%s=%s\n", strIt->second->getName().c_str(), strIt->second->getStrVal().c_str());
+    printf("----------函数表----------\n");
+    for (int i = 0; i < funList.size(); i++)
+    {
+        funTab[funList[i]]->toString();
+    }
+}

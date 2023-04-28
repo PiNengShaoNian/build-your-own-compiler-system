@@ -70,9 +70,14 @@ public:
     bool getPtr();           // 获取指针
     Var *getPointer();       // 获取指针
     void setPointer(Var *p); // 设置指针变量
-    bool isBase();           // 是基本类型
-    bool isVoid();           // 是void——唯一静态存储区变量getVoid()使用
-    bool isRef();            // 是引用类型
+    string getStrVal();      // 获取字符串常量内容
+    bool isBase();   // 是基本类型
+    bool isVoid();   // 是void——唯一静态存储区变量getVoid()使用
+    bool isRef();    // 是引用类型
+    void toString(); // 输出信息
+
+    // 数据流分析接口
+    int getVal(); // 获取常量值
 };
 
 /*******************************************************************************
@@ -122,4 +127,5 @@ public:
     void setExtern(bool ext); // 设置extern
     Tag getType();            // 获取函数类型
     string &getName();        // 获取名字
+    void toString();          // 输出信息
 };
