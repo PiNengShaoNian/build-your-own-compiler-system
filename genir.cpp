@@ -851,6 +851,19 @@ void GenIR::genReturn(Var *ret)
 }
 
 /*
+    产生变量初始化语句
+*/
+bool GenIR::genVarInit(Var *var)
+{
+    if (var->getName()[0] == '<')
+        return 0;
+    symtab.addInst(new InterInst(OP_DEC, var));    // 添加变量声明指令
+    if (var->setInit())                            // 初始化语句
+        genTwoOp(var, ASSIGN, var->getInitData()); // 产生赋值表达式语句 name=init->name
+    return 1;
+}
+
+/*
     产生函数入口语句
 */
 void GenIR::genFunHead(Fun *function)

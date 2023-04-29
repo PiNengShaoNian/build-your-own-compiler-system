@@ -61,20 +61,25 @@ public:
     Var();                                                                          // void变量
 
     // 外界调用接口
+    bool setInit();          // 设定初始化，由调用者决定初始化方式和顺序
+    Var *getInitData();      // 获取初始化变量数据
     vector<int> &getPath();  // 获取scopePath
     string getName();        // 获取名字
     Tag getType();           // 获取类型
     void setLeft(bool lf);   // 设置变量的左值属性
     bool getLeft();          // 获取左值属性
+    void setOffset(int off); // 设置栈帧偏移
+    int getOffset();         // 获取栈帧偏移
+    int getSize();           // 获取变量大小
     bool getArray();         // 获取数组
     bool getPtr();           // 获取指针
     Var *getPointer();       // 获取指针
     void setPointer(Var *p); // 设置指针变量
     string getStrVal();      // 获取字符串常量内容
-    bool isBase();   // 是基本类型
-    bool isVoid();   // 是void——唯一静态存储区变量getVoid()使用
-    bool isRef();    // 是引用类型
-    void toString(); // 输出信息
+    bool isBase();           // 是基本类型
+    bool isVoid();           // 是void——唯一静态存储区变量getVoid()使用
+    bool isRef();            // 是引用类型
+    void toString();         // 输出信息
 
     // 数据流分析接口
     int getVal(); // 获取常量值

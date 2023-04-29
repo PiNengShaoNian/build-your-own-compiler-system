@@ -5,6 +5,7 @@
 #include "symtab.h"
 #include "compiler.h"
 #include "genir.h"
+#include "platform.h"
 
 // 打印语义错误
 #define SEMERROR(code, name) Error::semError(code, name)
@@ -242,6 +243,38 @@ void Var::setArray(int len)
 }
 
 /*
+    初始化检查与信息记录，数组不允许初始化
+    局部变量初始化如果使用中间代码生成器返回true
+*/
+bool Var::setInit()
+{
+    Var *init = initData; // 取出初值数据
+    if (!init)
+        return false; // 没有初始化表达式
+    inited = false;   // 默认初始化失败
+    if (externed)
+        SEMERROR(DEC_INIT_DENY, name); // 声明不允许初始化
+    else if (!GenIR::typeCheck(this, init))
+        SEMERROR(VAR_INIT_ERR, name); // 类型检查不兼容
+    else if (init->literal)           // 使用常量初始化
+    {
+        inited = true;             // 初始化成功！
+        if (init->isArray)         // 初始化常量是数组，必是字符串
+            ptrVal = init->name;   // 字符指针变量初始值=常量字符串的名字
+        else                       // 基本类型
+            intVal = init->intVal; // 拷贝数值数据
+    }
+    else // 初始值不是常量
+    {
+        if (scopePath.size() == 1)        // 被初始化变量是全局变量
+            SEMERROR(GLB_INIT_ERR, name); // 全局变量初始化必须是常量
+        else                              // 被初始化变量是局部变量
+            return true;
+    }
+    return false;
+}
+
+/*
     获取作用域路径
 */
 vector<int> &Var::getPath()
@@ -309,8 +342,15 @@ Fun::Fun(bool ext, Tag t, string n, vector<Var *> &paraList)
     type = t;
     name = n;
     paraVar = paraList;
-    // TODO
+    curEsp = Plat::stackBase;   // 没有执行寄存器分配前，不需要保存现场，栈帧基址不需要修正。
+    maxDepth = Plat::stackBase; // 防止没有定义局部变量导致最大值出错。
+    // 保存现场和恢复现场有函数内部解决，因此参数偏移不需要修正！
+    for (int i = 0, argOff = 4; i < paraVar.size(); i++, argOff++) // 初始化参数变量地址从左到右，参数进栈从右到左
+    {
+        paraVar[i]->setOffset(argOff);
+    }
 }
+
 Fun::~Fun()
 {
     // TODO
@@ -340,6 +380,14 @@ void Fun::leaveScope()
 void Fun::setExtern(bool ext)
 {
     externed = ext;
+}
+
+/*
+    获取初始化变量数据
+*/
+Var *Var::getInitData()
+{
+    return initData;
 }
 
 /*
@@ -377,6 +425,22 @@ void Var::setLeft(bool lf)
 bool Var::getLeft()
 {
     return isLeft;
+}
+
+/*
+    设置栈帧偏移
+*/
+void Var::setOffset(int off)
+{
+    offset = off;
+}
+
+/*
+    获取栈帧偏移
+*/
+int Var::getOffset()
+{
+    return offset;
 }
 
 /*
@@ -435,6 +499,18 @@ void Var::toString()
         printf("addr=<%s>", name.c_str());
     else
         printf("value='%d'", getVal());
+}
+
+/*
+    定位局部变了栈帧偏移
+*/
+void Fun::locate(Var *var)
+{
+    int size = var->getSize();
+    size += (4 - size % 4) % 4; // 按照4字节的大小整数倍分配局部变量
+    scopeEsp.back() += size;    // 累计作用域大小
+    curEsp += size;             // 累计当前作用域大小
+    var->setOffset(-curEsp);    // 局部变量偏移为负数
 }
 
 /*

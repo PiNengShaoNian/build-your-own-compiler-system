@@ -113,7 +113,12 @@ void SymTab::addVar(Var *var)
             return; // 无效变量，删除，不定位
         }
     }
-    // TODO
+    if (ir)
+    {
+        int flag = ir->genVarInit(var); // 产生变量初始化语句,常量返回0
+        if (curFun && flag)
+            curFun->locate(var); // 计算局部变量的栈帧偏移
+    }
 }
 
 /*
@@ -281,6 +286,14 @@ void SymTab::leave()
     scopePath.pop_back(); // 撤销更改
     if (curFun)
         curFun->leaveScope();
+}
+
+/*
+    获取变量大小
+*/
+int Var::getSize()
+{
+    return size;
 }
 
 /*
