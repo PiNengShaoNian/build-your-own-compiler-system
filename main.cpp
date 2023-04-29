@@ -33,7 +33,8 @@ int main(int argc, char *argv[])
         if (Error::getErrorNum() + Error::getWarnNum())
             return -1; // 出错不进行后续操作
 
-        symTab.toString(); // 输出符号表
+        symTab.toString();       // 输出符号表
+        symTab.printInterCode(); // 输出中间代码
 
         assert(lexer.tokenize()->tag == END);
     }

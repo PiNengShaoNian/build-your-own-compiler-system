@@ -28,6 +28,9 @@ public:
     InterInst(Operator op, Var *arg1 = NULL);                                   // 参数进栈指令,NOP
     InterInst(Operator op, InterInst *tar, Var *arg1 = NULL, Var *arg2 = NULL); // 条件跳转指令,return
     InterInst();                                                                // 产生唯一标号
+
+    // 外部调用接口
+    void toString(); // 输出指令
 };
 
 /*
@@ -43,4 +46,7 @@ public:
 
     // 管理操作
     void addInst(InterInst *inst); // 添加一条中间代码
+
+    // 外部调用接口
+    void toString(); // 输出指令
 };

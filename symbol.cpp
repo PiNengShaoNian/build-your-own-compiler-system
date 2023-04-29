@@ -452,6 +452,25 @@ int Var::getVal()
 }
 
 /*
+    输出变量的中间代码形式
+*/
+void Var::value()
+{
+    if (literal)
+    {
+        if (type == KW_INT)
+            printf("%d", intVal);
+        else if (type == KW_CHAR)
+            if (isArray)
+                printf("%s", name.c_str());
+            else
+                printf("%d", charVal);
+    }
+    else
+        printf("%s", name.c_str());
+}
+
+/*
     输出变量信息
 */
 void Var::toString()
@@ -499,6 +518,18 @@ void Var::toString()
         printf("addr=<%s>", name.c_str());
     else
         printf("value='%d'", getVal());
+}
+
+/*
+    输出中间代码
+*/
+void Fun::printInterCode()
+{
+    if (externed)
+        return;
+    printf("-------------<%s>Start--------------\n", name.c_str());
+    interCode.toString();
+    printf("--------------<%s>End---------------\n", name.c_str());
 }
 
 /*

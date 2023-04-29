@@ -66,4 +66,5 @@ public:
     vector<int> &getScopePath(); // 获取scopePath
     Fun *getCurFun();            // 获取当前分析的函数
     void toString();             // 输出信息
+    void printInterCode();       // 输出中间指令
 };

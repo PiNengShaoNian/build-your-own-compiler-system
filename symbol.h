@@ -80,6 +80,7 @@ public:
     bool isVoid();           // 是void——唯一静态存储区变量getVoid()使用
     bool isRef();            // 是引用类型
     void toString();         // 输出信息
+    void value();            // 输出变量的中间代码形式
 
     // 数据流分析接口
     int getVal(); // 获取常量值
@@ -133,4 +134,5 @@ public:
     Tag getType();            // 获取函数类型
     string &getName();        // 获取名字
     void toString();          // 输出信息
+    void printInterCode();    // 输出中间代码
 };

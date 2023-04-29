@@ -340,3 +340,14 @@ void SymTab::toString()
         funTab[funList[i]]->toString();
     }
 }
+
+/*
+    输出中间代码
+*/
+void SymTab::printInterCode()
+{
+    for (int i = 0; i < funList.size(); i++)
+    {
+        funTab[funList[i]]->printInterCode();
+    }
+}
