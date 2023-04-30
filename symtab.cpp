@@ -160,6 +160,30 @@ Var *SymTab::getVar(string name)
 }
 
 /*
+    获取所有全局变量
+*/
+vector<Var *> SymTab::getGlbVars()
+{
+    vector<Var *> glbVars;
+    for (int i = 0; i < varList.size(); i++)
+    {
+        string varName = varList[i];
+        if (varName[0] == '<') // 忽略常量
+            continue;
+        vector<Var *> &list = *varTab[varName];
+        for (int j = 0; j < list.size(); j++)
+        {
+            if (list[j]->getPath().size() == 1) // 全局的变量
+            {
+                glbVars.push_back(list[j]);
+                break; // 仅可能有一个同名全局变量
+            }
+        }
+    }
+    return glbVars;
+}
+
+/*
     根据实际参数，获取一个函数
 */
 Fun *SymTab::getFun(string name, vector<Var *> &args)
@@ -313,6 +337,14 @@ Tag Var::getType()
 }
 
 /*
+    判断是否是字符变量
+*/
+bool Var::isChar()
+{
+    return (type == KW_CHAR) && isBase(); // 是基本的字符类型
+}
+
+/*
     输出符号表信息
 */
 void SymTab::toString()
@@ -350,4 +382,67 @@ void SymTab::printInterCode()
     {
         funTab[funList[i]]->printInterCode();
     }
+}
+
+void SymTab::genData(FILE *file)
+{
+    // 生成常量字符串,.rodata段
+    fprintf(file, ".section .rodata\n");
+    hash_map<string, Var *, string_hash>::iterator strIt, strEnd = strTab.end();
+    for (strIt = strTab.begin(); strIt != strEnd; ++strIt)
+    {
+        Var *str = strIt->second;                                     // 常量字符串变量
+        fprintf(file, "%s:\n", str->getName().c_str());               // var:
+        fprintf(file, "\t.ascii \"%s\"\n", str->getRawStr().c_str()); //.ascii "abc\000"
+    }
+    // 生成数据段和bss段
+    fprintf(file, ".data\n");
+    vector<Var *> glbVars = getGlbVars(); // 获取所有全局变量
+    for (int i = 0; i < glbVars.size(); i++)
+    {
+        Var *var = glbVars[i];
+        fprintf(file, "\t.global %s\n", var->getName().c_str()); //.global var
+        if (!var->unInit())                                      // 变量初始化了,放在数据段
+        {
+            fprintf(file, "%s:\n", var->getName().c_str()); // var:
+            if (var->isBase())                              // 基本类型初始化 100 'a'
+            {
+                const char *t = var->isChar() ? ".byte" : ".word";
+                fprintf(file, "\t%s %d\n", t, var->getVal()); //.byte 65  .word 100
+            }
+            else // 字符指针初始化
+            {
+                fprintf(file, "\t.word %s\n", var->getPtrVal().c_str()); //.word .L0
+            }
+        }
+        else // 放在bss段
+        {
+            fprintf(file, "\t.comm %s,%d\n", var->getName().c_str(), var->getSize()); //.comm var,4
+        }
+    }
+}
+
+/*
+    输出汇编文件
+*/
+void SymTab::genAsm(char *fileName)
+{
+    // 将.c替换为.o，或者直接追加.o
+    string newName = fileName;
+    int pos = newName.rfind(".c");
+    if (pos > 0 && pos == newName.length() - 2)
+        newName.replace(pos, 2, ".s");
+    else
+        newName = newName + ".s";
+    FILE *file = fopen(newName.c_str(), "w"); // 创建输出文件
+    // 生成数据段
+    genData(file);
+    // TODO
+    fprintf(file, ".text\n");
+    for (int i = 0; i < funList.size(); i++)
+    {
+        // printf("-------------生成函数<%s>--------------\n",funTab[funList[i]]->getName().c_str());
+        funTab[funList[i]]->genAsm(file);
+    }
+    fclose(file);
 }

@@ -65,7 +65,11 @@ public:
     Var *getInitData();      // 获取初始化变量数据
     vector<int> &getPath();  // 获取scopePath
     string getName();        // 获取名字
+    string getPtrVal();      // 获取指针变量
+    string getRawStr();      // 获取原始字符串值
     Tag getType();           // 获取类型
+    bool isChar();           // 判断是否是字符变量
+    bool isCharPtr();        // 判断字符指针
     void setLeft(bool lf);   // 设置变量的左值属性
     bool getLeft();          // 获取左值属性
     void setOffset(int off); // 设置栈帧偏移
@@ -83,7 +87,12 @@ public:
     void value();            // 输出变量的中间代码形式
 
     // 数据流分析接口
-    int getVal(); // 获取常量值
+    bool unInit();   // 是否初始化
+    bool notConst(); // 是否是常量
+    int getVal();    // 获取常量值
+
+    // 寄存器分配信息
+    int regId; // 分配的寄存器编号，-1表示在内存，偏移地址为offset!!!
 };
 
 /*******************************************************************************
@@ -127,12 +136,16 @@ public:
     void addInst(InterInst *inst);        // 添加一条中间代码
     void setReturnPoint(InterInst *inst); // 设置函数返回点
     InterInst *getReturnPoint();          // 获取函数返回点
+    int getMaxDep();                      // 获取最大栈帧深度
 
     // 外部调用掉口
-    bool getExtern();         // 获取extern
-    void setExtern(bool ext); // 设置extern
-    Tag getType();            // 获取函数类型
-    string &getName();        // 获取名字
-    void toString();          // 输出信息
-    void printInterCode();    // 输出中间代码
+    bool getExtern();            // 获取extern
+    void setExtern(bool ext);    // 设置extern
+    Tag getType();               // 获取函数类型
+    string &getName();           // 获取名字
+    bool isRelocated();          // 栈帧重定位了？
+    vector<Var *> &getParaVar(); // 获取参数列表，用于为参数生成加载代码
+    void toString();             // 输出信息
+    void printInterCode();       // 输出中间代码
+    void genAsm(FILE *file);     // 输出汇编代码
 };

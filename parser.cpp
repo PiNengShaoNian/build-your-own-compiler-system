@@ -807,7 +807,7 @@ Var *Parser::alotail(Var *lval)
         Tag opt = adds();
         Var *rval = item();
         Var *result = ir.genTwoOp(lval, opt, rval); // 双目运算
-        return alotail(NULL);
+        return alotail(result);
     }
     return lval;
 }

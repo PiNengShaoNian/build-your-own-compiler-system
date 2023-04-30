@@ -37,5 +37,8 @@ int main(int argc, char *argv[])
         symTab.printInterCode(); // 输出中间代码
 
         assert(lexer.tokenize()->tag == END);
+
+        // 生成汇编代码
+        symTab.genAsm(srcfiles[0]);
     }
 }

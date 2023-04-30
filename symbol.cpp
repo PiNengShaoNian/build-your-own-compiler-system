@@ -6,6 +6,8 @@
 #include "compiler.h"
 #include "genir.h"
 #include "platform.h"
+#include "iloc.h"
+#include "selector.h"
 
 // 打印语义错误
 #define SEMERROR(code, name) Error::semError(code, name)
@@ -65,7 +67,9 @@ void Var::clear()
     offset = 0;
     ptr = NULL; // 没有指向当前变量的指针变量
     initData = NULL;
+
     // TODO
+    regId = -1; // 默认放在内存
 }
 
 /*
@@ -103,6 +107,7 @@ Var::Var(vector<int> &sp, Tag t, bool ptr)
     setName("");
     setLeft(false);
 }
+
 /*
     变量，指针
 */
@@ -299,11 +304,27 @@ Var *Var::getPointer()
 }
 
 /*
+    获取字符指针内容
+*/
+string Var::getPtrVal()
+{
+    return ptrVal;
+}
+
+/*
     获取字符串常量内容
 */
 string Var::getStrVal()
 {
     return strVal;
+}
+
+/*
+    判断字符指针
+*/
+bool Var::isCharPtr()
+{
+    return (type == KW_CHAR) && !isBase(); // 字符指针或者字符数组
 }
 
 /*
@@ -320,6 +341,14 @@ bool Var::getPtr()
 string Var::getName()
 {
     return name;
+}
+
+/*
+    获取参数列表，用于为参数生成加载代码
+*/
+vector<Var *> &Fun::getParaVar()
+{
+    return paraVar;
 }
 
 /*
@@ -345,10 +374,11 @@ Fun::Fun(bool ext, Tag t, string n, vector<Var *> &paraList)
     curEsp = Plat::stackBase;   // 没有执行寄存器分配前，不需要保存现场，栈帧基址不需要修正。
     maxDepth = Plat::stackBase; // 防止没有定义局部变量导致最大值出错。
     // 保存现场和恢复现场有函数内部解决，因此参数偏移不需要修正！
-    for (int i = 0, argOff = 4; i < paraVar.size(); i++, argOff++) // 初始化参数变量地址从左到右，参数进栈从右到左
+    for (int i = 0, argOff = 4; i < paraVar.size(); i++, argOff += 4) // 初始化参数变量地址从左到右，参数进栈从右到左
     {
         paraVar[i]->setOffset(argOff);
     }
+    relocated = false;
 }
 
 Fun::~Fun()
@@ -412,6 +442,39 @@ string &Fun::getName()
 }
 
 /*
+    获取字符串常量原始内容，将特殊字符转义
+*/
+string Var::getRawStr()
+{
+    string raw;
+    for (int i = 0; i < strVal.size(); i++)
+    {
+        switch (strVal[i])
+        {
+        case '\n':
+            raw.append("\\n");
+            break;
+        case '\t':
+            raw.append("\\t");
+            break;
+        case '\0':
+            raw.append("\\000");
+            break;
+        case '\\':
+            raw.append("\\\\");
+            break;
+        case '\"':
+            raw.append("\\\"");
+            break;
+        default:
+            raw.push_back(strVal[i]);
+        }
+    }
+    raw.append("\\000"); // 结束标记
+    return raw;
+}
+
+/*
     设置变量的左值
 */
 void Var::setLeft(bool lf)
@@ -441,6 +504,22 @@ void Var::setOffset(int off)
 int Var::getOffset()
 {
     return offset;
+}
+
+/*
+    是否初始化
+*/
+bool Var::unInit()
+{
+    return !inited;
+}
+
+/*
+    是否是常量
+*/
+bool Var::notConst()
+{
+    return !literal;
 }
 
 /*
@@ -530,6 +609,33 @@ void Fun::printInterCode()
     printf("-------------<%s>Start--------------\n", name.c_str());
     interCode.toString();
     printf("--------------<%s>End---------------\n", name.c_str());
+}
+
+/*
+    输出汇编代码
+*/
+void Fun::genAsm(FILE *file)
+{
+    if (externed)
+        return;
+    // 导出最终的代码,如果优化则是优化后的中间代码，否则就是普通的中间代码
+    vector<InterInst *> code;
+
+    // TODO
+    code = interCode.getCode();
+
+    const char *pname = name.c_str();
+    fprintf(file, "#函数%s代码\n", pname);
+    fprintf(file, "\t.global %s\n", pname); //.global fun\n
+    fprintf(file, "%s:\n", pname);          // fun:\n
+    ILoc il;                                // ILOC代码
+
+    // 将最终的中间代码转化为ILOC代码
+    Selector sl(code, il); // 指令选择器
+
+    sl.select();
+
+    il.outPut(file);
 }
 
 /*
@@ -668,4 +774,20 @@ void Fun::toString()
         printf(":\n");
         printf("\t\tmaxDepth=%d\n", maxDepth);
     }
+}
+
+/*
+    获取最大栈帧深度
+*/
+int Fun::getMaxDep()
+{
+    return maxDepth;
+}
+
+/*
+    函数栈帧被重新定位了？
+*/
+bool Fun::isRelocated()
+{
+    return relocated;
 }

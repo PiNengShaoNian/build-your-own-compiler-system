@@ -30,7 +30,14 @@ public:
     InterInst();                                                                // 产生唯一标号
 
     // 外部调用接口
-    void toString(); // 输出指令
+    Operator getOp();       // 获取操作符
+    InterInst *getTarget(); // 获取跳转指令的目标指令
+    Var *getResult();       // 获取返回值
+    Var *getArg1();         // 获取第一个参数
+    Var *getArg2();         // 获取第二个参数
+    string getLabel();      // 获取标签
+    Fun *getFun();          // 获取函数对象
+    void toString();        // 输出指令
 };
 
 /*
@@ -48,5 +55,6 @@ public:
     void addInst(InterInst *inst); // 添加一条中间代码
 
     // 外部调用接口
-    void toString(); // 输出指令
+    void toString();                // 输出指令
+    vector<InterInst *> &getCode(); // 获取中间代码序列
 };

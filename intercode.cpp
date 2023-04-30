@@ -77,6 +77,62 @@ InterInst::InterInst(Operator op, InterInst *tar, Var *arg1, Var *arg2)
 }
 
 /*
+    获取第一个参数
+*/
+Var *InterInst::getArg1()
+{
+    return arg1;
+}
+
+/*
+    获取第二个参数
+*/
+Var *InterInst::getArg2()
+{
+    return arg2;
+}
+
+/*
+    获取标签
+*/
+string InterInst::getLabel()
+{
+    return label;
+}
+
+/*
+    获取函数对象
+*/
+Fun *InterInst::getFun()
+{
+    return fun;
+}
+
+/*
+    获取操作符
+*/
+Operator InterInst::getOp()
+{
+    return op;
+}
+
+/*
+    获取跳转指令的目标指令
+*/
+InterInst *InterInst::getTarget()
+{
+    return target;
+}
+
+/*
+    获取返回值
+*/
+Var *InterInst::getResult()
+{
+    return result;
+}
+
+/*
     输出指令信息
 */
 void InterInst::toString()
@@ -311,4 +367,11 @@ InterCode::~InterCode()
     {
         delete code[i];
     }
+}
+/*
+    获取中间代码序列
+*/
+vector<InterInst *> &InterCode::getCode()
+{
+    return code;
 }
