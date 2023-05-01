@@ -345,6 +345,17 @@ bool Var::isChar()
 }
 
 /*
+    执行优化操作
+*/
+void SymTab::optimize()
+{
+    for (int i = 0; i < funList.size(); i++)
+    {
+        funTab[funList[i]]->optimize(this);
+    }
+}
+
+/*
     输出符号表信息
 */
 void SymTab::toString()

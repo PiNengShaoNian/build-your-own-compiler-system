@@ -8,6 +8,7 @@
 #include "platform.h"
 #include "iloc.h"
 #include "selector.h"
+#include "dfg.h"
 
 // 打印语义错误
 #define SEMERROR(code, name) Error::semError(code, name)
@@ -378,12 +379,14 @@ Fun::Fun(bool ext, Tag t, string n, vector<Var *> &paraList)
     {
         paraVar[i]->setOffset(argOff);
     }
+    dfg = NULL;
     relocated = false;
 }
 
 Fun::~Fun()
 {
-    // TODO
+    if (dfg)
+        delete dfg; // 清理数据流图
 }
 
 /*
@@ -774,6 +777,20 @@ void Fun::toString()
         printf(":\n");
         printf("\t\tmaxDepth=%d\n", maxDepth);
     }
+}
+
+/*
+    执行优化操作
+*/
+void Fun::optimize(SymTab *tab)
+{
+    if (externed) // 函数声明不处理
+        return;
+    // 数据流图
+    dfg = new DFG(interCode); // 创建数据流图
+
+    if (Args::showBlock) // 输出基本块和流图关系
+        dfg->toString();
 }
 
 /*

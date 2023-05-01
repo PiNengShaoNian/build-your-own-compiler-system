@@ -116,6 +116,7 @@ class Fun
     vector<int> scopeEsp;   // 当前作用域初始esp，动态控制作用域的分配和释放
     InterCode interCode;    // 中间代码
     InterInst *returnPoint; // 返回点
+    DFG *dfg;               // 数据流图指针
 
 public:
     // 构造函数与析构函数
@@ -137,6 +138,7 @@ public:
     void setReturnPoint(InterInst *inst); // 设置函数返回点
     InterInst *getReturnPoint();          // 获取函数返回点
     int getMaxDep();                      // 获取最大栈帧深度
+    void optimize(SymTab *tab);           // 执行优化操作
 
     // 外部调用掉口
     bool getExtern();            // 获取extern

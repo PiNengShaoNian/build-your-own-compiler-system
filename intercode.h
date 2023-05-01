@@ -19,9 +19,13 @@ private:
     //};
     Var *arg2; // 参数2
 
+    bool first;  // 是否是首指令
     void init(); // 初始化
 
 public:
+    // 初始化
+    Block *block; // 指令所在的基本块指针
+
     // 构造
     InterInst(Operator op, Var *rs, Var *arg1, Var *arg2 = NULL);               // 一般运算指令
     InterInst(Operator op, Fun *fun, Var *rs = NULL);                           // 函数调用指令,ENTRY,EXIT
@@ -30,6 +34,11 @@ public:
     InterInst();                                                                // 产生唯一标号
 
     // 外部调用接口
+    void setFirst(); // 标记首指令
+
+    bool isJcond();         // 是否条件转移指令JT,JF,Jcond
+    bool isJmp();           // 是否直接转移指令JMP,return
+    bool isFirst();         // 是首指令
     Operator getOp();       // 获取操作符
     InterInst *getTarget(); // 获取跳转指令的目标指令
     Var *getResult();       // 获取返回值
@@ -53,6 +62,9 @@ public:
 
     // 管理操作
     void addInst(InterInst *inst); // 添加一条中间代码
+
+    // 关键操作
+    void markFirst(); // 标识“首指令”
 
     // 外部调用接口
     void toString();                // 输出指令

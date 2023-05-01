@@ -335,6 +335,38 @@ void InterInst::toString()
     printf("\n");
 }
 
+/*
+    是否条件转移指令JT,JF,Jcond
+*/
+bool InterInst::isJcond()
+{
+    return op >= OP_JT && op <= OP_JNE;
+}
+
+/*
+    是否直接转移指令JMP,return
+*/
+bool InterInst::isJmp()
+{
+    return op == OP_JMP || op == OP_RET || op == OP_RETV;
+}
+
+/*
+    标记首指令
+*/
+void InterInst::setFirst()
+{
+    first = true;
+}
+
+/*
+    是首指令
+*/
+bool InterInst::isFirst()
+{
+    return first;
+}
+
 /*******************************************************************************
                                    中间代码
 *******************************************************************************/
@@ -374,4 +406,30 @@ InterCode::~InterCode()
 vector<InterInst *> &InterCode::getCode()
 {
     return code;
+}
+
+/*
+    标识“首指令”
+*/
+void InterCode::markFirst()
+{
+    int len = code.size(); // 指令个数，最少为2
+
+    // 标识Entry与Exit
+    code[0]->setFirst();
+    code[len - 1]->setFirst();
+
+    // 标识第一条实际指令，如果有的话
+    if (len > 2)
+        code[1]->setFirst();
+
+    // 标识第1条实际指令到倒数第2条指令
+    for (int i = 1; i < len - 1; ++i)
+    {
+        if (code[i]->isJmp() || code[i]->isJcond()) // （直接/条件）跳转指令目标和紧跟指令都是首指令
+        {
+            code[i]->getTarget()->setFirst();
+            code[i + 1]->setFirst();
+        }
+    }
 }
