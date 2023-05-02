@@ -87,6 +87,7 @@ public:
     void value();            // 输出变量的中间代码形式
 
     // 数据流分析接口
+    int index;       // 列表索引
     bool unInit();   // 是否初始化
     bool notConst(); // 是否是常量
     int getVal();    // 获取常量值
@@ -113,10 +114,11 @@ class Fun
     bool relocated; // 栈帧重定位标记
 
     // 作用域管理
-    vector<int> scopeEsp;   // 当前作用域初始esp，动态控制作用域的分配和释放
-    InterCode interCode;    // 中间代码
-    InterInst *returnPoint; // 返回点
-    DFG *dfg;               // 数据流图指针
+    vector<int> scopeEsp;      // 当前作用域初始esp，动态控制作用域的分配和释放
+    InterCode interCode;       // 中间代码
+    InterInst *returnPoint;    // 返回点
+    DFG *dfg;                  // 数据流图指针
+    list<InterInst *> optCode; // 优化后的中间代码
 
 public:
     // 构造函数与析构函数
@@ -149,5 +151,6 @@ public:
     vector<Var *> &getParaVar(); // 获取参数列表，用于为参数生成加载代码
     void toString();             // 输出信息
     void printInterCode();       // 输出中间代码
+    void printOptCode();         // 输出优化后的中间代码
     void genAsm(FILE *file);     // 输出汇编代码
 };

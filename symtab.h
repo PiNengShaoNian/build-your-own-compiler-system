@@ -68,6 +68,7 @@ public:
     void toString();             // 输出信息
     void printInterCode();       // 输出中间指令
     void optimize();             // 执行优化操作
+    void printOptCode();         // 输出中间指令
     void genData(FILE *file);    // 输出数据
     void genAsm(char *fileName); // 输出汇编文件
 };

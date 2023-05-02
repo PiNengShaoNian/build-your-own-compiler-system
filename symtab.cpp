@@ -395,6 +395,17 @@ void SymTab::printInterCode()
     }
 }
 
+/*
+    输出优化的中间代码
+*/
+void SymTab::printOptCode()
+{
+    for (int i = 0; i < funList.size(); i++)
+    {
+        funTab[funList[i]]->printOptCode();
+    }
+}
+
 void SymTab::genData(FILE *file)
 {
     // 生成常量字符串,.rodata段
@@ -448,7 +459,13 @@ void SymTab::genAsm(char *fileName)
     FILE *file = fopen(newName.c_str(), "w"); // 创建输出文件
     // 生成数据段
     genData(file);
-    // TODO
+
+    // 生成代码段
+    if (Args::opt)
+        fprintf(file, "#优化代码\n");
+    else
+        fprintf(file, "#未优化代码\n");
+
     fprintf(file, ".text\n");
     for (int i = 0; i < funList.size(); i++)
     {

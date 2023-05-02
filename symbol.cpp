@@ -9,6 +9,7 @@
 #include "iloc.h"
 #include "selector.h"
 #include "dfg.h"
+#include "constprop.h"
 
 // 打印语义错误
 #define SEMERROR(code, name) Error::semError(code, name)
@@ -67,6 +68,7 @@ void Var::clear()
     size = 0;
     offset = 0;
     ptr = NULL; // 没有指向当前变量的指针变量
+    index = -1; // 无效索引
     initData = NULL;
 
     // TODO
@@ -615,6 +617,21 @@ void Fun::printInterCode()
 }
 
 /*
+    输出优化后的中间代码
+*/
+void Fun::printOptCode()
+{
+    if (externed)
+        return;
+    printf("-------------<%s>Start--------------\n", name.c_str());
+    for (list<InterInst *>::iterator i = optCode.begin(); i != optCode.end(); ++i)
+    {
+        (*i)->toString();
+    }
+    printf("--------------<%s>End---------------\n", name.c_str());
+}
+
+/*
     输出汇编代码
 */
 void Fun::genAsm(FILE *file)
@@ -624,8 +641,17 @@ void Fun::genAsm(FILE *file)
     // 导出最终的代码,如果优化则是优化后的中间代码，否则就是普通的中间代码
     vector<InterInst *> code;
 
-    // TODO
-    code = interCode.getCode();
+    if (Args::opt) // 经过优化
+    {
+        for (list<InterInst *>::iterator it = optCode.begin(); it != optCode.end(); ++it)
+        {
+            code.push_back(*it);
+        }
+    }
+    else // 未优化，将中间代码导出
+    {
+        code = interCode.getCode();
+    }
 
     const char *pname = name.c_str();
     fprintf(file, "#函数%s代码\n", pname);
@@ -791,6 +817,16 @@ void Fun::optimize(SymTab *tab)
 
     if (Args::showBlock) // 输出基本块和流图关系
         dfg->toString();
+
+    if (!Args::opt) // 不执行优化
+        return;
+
+    // 常量传播：代数化简，条件跳转优化，不可达代码消除
+    ConstPropagation conPro(dfg, tab, paraVar); // 常量传播
+    conPro.propagate();
+
+    // 优化结果存储在optCode
+    dfg->toCode(optCode); // 导出数据流图为中间代码
 }
 
 /*

@@ -77,6 +77,14 @@ InterInst::InterInst(Operator op, InterInst *tar, Var *arg1, Var *arg2)
 }
 
 /*
+    是否是声明
+*/
+bool InterInst::isDec()
+{
+    return op == OP_DEC;
+}
+
+/*
     获取第一个参数
 */
 Var *InterInst::getArg1()
@@ -109,6 +117,14 @@ Fun *InterInst::getFun()
 }
 
 /*
+    是基本类型表达式运算,可以对指针取值
+*/
+bool InterInst::isExpr()
+{
+    return (op >= OP_AS && op <= OP_OR || op == OP_GET); //&&result->isBase();
+}
+
+/*
     获取操作符
 */
 Operator InterInst::getOp()
@@ -130,6 +146,45 @@ InterInst *InterInst::getTarget()
 Var *InterInst::getResult()
 {
     return result;
+}
+
+/*
+    设置第一个参数
+*/
+void InterInst::setArg1(Var *arg1)
+{
+    this->arg1 = arg1;
+}
+
+/*
+    替换表达式指令信息
+*/
+void InterInst::replace(Operator op, Var *rs, Var *arg1, Var *arg2)
+{
+    this->op = op;
+    this->result = rs;
+    this->arg1 = arg1;
+    this->arg2 = arg2;
+}
+
+/*
+    替换跳转指令信息，条件跳转优化
+*/
+void InterInst::replace(Operator op, InterInst *tar, Var *arg1, Var *arg2)
+{
+    this->op = op;
+    this->target = tar;
+    this->arg1 = arg1;
+    this->arg2 = arg2;
+}
+
+/*
+    清理常量内存
+*/
+InterInst::~InterInst()
+{
+    // if(arg1&&arg1->isLiteral())delete arg1;
+    // if(arg2&&arg2->isLiteral())delete arg2;
 }
 
 /*

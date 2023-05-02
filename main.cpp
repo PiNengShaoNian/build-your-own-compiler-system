@@ -95,6 +95,9 @@ int main(int argc, char *argv[])
         // 优化
         symTab.optimize(); // 执行优化
 
+        if (Args::showOr)
+            symTab.printOptCode(); // 输出优化后的中间代码
+
         // 生成汇编代码
         symTab.genAsm(srcfiles[0]);
     }

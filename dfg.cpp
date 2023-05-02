@@ -8,7 +8,7 @@
 /*
     构造与初始化
 */
-Block::Block(vector<InterInst *> &codes)
+Block::Block(vector<InterInst *> &codes) : visited(false), canReach(true)
 {
     for (int i = 0; i < codes.size(); ++i)
     {
@@ -122,6 +122,109 @@ DFG::~DFG()
         delete blocks[i];
     }
     // TODO
+}
+
+/*
+    测试块是否可达
+*/
+bool DFG::reachable(Block *block)
+{
+    if (block == blocks[0]) // 到达入口
+        return true;
+    else if (block->visited) // 访问过了
+        return false;
+    block->visited = true; // 设定访问标记
+    bool flag = false;     // 可达入口标记
+
+    // 若有前驱,测试每个前驱
+    for (list<Block *>::iterator i = block->prevs.begin(); i != block->prevs.end(); ++i)
+    {
+        Block *prev = *i;       // 每个前驱
+        flag = reachable(prev); // 递归测试
+
+        if (flag) // 可到达入口终止测试，否则继续测试其他前驱
+            break;
+    }
+    return flag; // 返回标记
+}
+
+/*
+    如果块不可达，则删除所有后继，并继续处理所有后继
+*/
+void DFG::release(Block *block)
+{
+    // 测试block是否还能入口点可达
+    if (!reachable(block)) // 确定为不可达代码
+    {
+        list<Block *> delList;
+        for (list<Block *>::iterator i = block->succs.begin(); i != block->succs.end(); ++i)
+        {
+            delList.push_back(*i); // 记录所有后继
+        }
+        // 先删除后继与当前块的关系
+        for (list<Block *>::iterator i = delList.begin(); i != delList.end(); ++i)
+        {
+            block->succs.remove(*i);
+            (*i)->prevs.remove(block);
+        }
+        // 再递归处理所有后继
+        for (list<Block *>::iterator i = delList.begin(); i != delList.end(); ++i)
+        {
+            release(*i); // 递归删除end的后继
+        }
+    }
+}
+
+/*
+    删除块间联系，如果块不可达，则删除所有后继联系
+*/
+void DFG::delLink(Block *begin, Block *end)
+{
+    resetVisit();
+    // 解除begin与end的关联
+    if (begin) // end没有前驱的情况
+    {
+        begin->succs.remove(end);
+        end->prevs.remove(begin);
+    }
+    release(end); // 递归解除关联，需要测试后继块是否可达
+}
+
+/*
+    重置访问标记
+*/
+void DFG::resetVisit()
+{
+    // 重置访问标记
+    for (int i = 0; i < blocks.size(); ++i)
+    {
+        blocks[i]->visited = false;
+    }
+}
+
+/*
+    导出数据流图为中间代码
+*/
+void DFG::toCode(list<InterInst *> &opt)
+{
+    opt.clear();
+    for (int i = 0; i < blocks.size(); ++i)
+    {
+        resetVisit();
+        if (reachable(blocks[i])) // 有效的基本块
+        {
+            list<InterInst *> tmpInsts; // 复制一份指令，防止意外删除
+            for (list<InterInst *>::iterator it = blocks[i]->insts.begin();
+                 it != blocks[i]->insts.end(); ++it)
+            {
+                // TODO
+                tmpInsts.push_back(*it); // 抽取有效指令
+            }
+            opt.splice(opt.end(), tmpInsts); // 合并有效基本快
+        }
+        else
+            blocks[i]->canReach = false; // 记录块不可达
+    }
 }
 
 /*
