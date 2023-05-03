@@ -125,6 +125,14 @@ bool InterInst::isExpr()
 }
 
 /*
+    不确定运算结果影响的运算(指针赋值，函数调用)
+*/
+bool InterInst::unknown()
+{
+    return op == OP_SET || op == OP_PROC || op == OP_CALL;
+}
+
+/*
     获取操作符
 */
 Operator InterInst::getOp()

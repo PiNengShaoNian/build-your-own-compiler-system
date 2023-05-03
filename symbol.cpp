@@ -10,6 +10,7 @@
 #include "selector.h"
 #include "dfg.h"
 #include "constprop.h"
+#include "copyprop.h"
 
 // 打印语义错误
 #define SEMERROR(code, name) Error::semError(code, name)
@@ -824,6 +825,10 @@ void Fun::optimize(SymTab *tab)
     // 常量传播：代数化简，条件跳转优化，不可达代码消除
     ConstPropagation conPro(dfg, tab, paraVar); // 常量传播
     conPro.propagate();
+
+    // 复写传播
+    CopyPropagation cp(dfg);
+    cp.propagate();
 
     // 优化结果存储在optCode
     dfg->toCode(optCode); // 导出数据流图为中间代码

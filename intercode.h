@@ -1,5 +1,6 @@
 #pragma once
 #include "common.h"
+#include "set.h"
 
 /*
     四元式类，定义了中间代码的指令的形式
@@ -29,6 +30,7 @@ public:
     // 数据流信息
     vector<double> inVals;  // 常量传播in集合
     vector<double> outVals; // 常量传播out集合
+    CopyInfo copyInfo;      // 复写传播数据流信息
 
     // 构造
     InterInst(Operator op, Var *rs, Var *arg1, Var *arg2 = NULL);                  // 一般运算指令
@@ -43,11 +45,13 @@ public:
     // 外部调用接口
     void setFirst(); // 标记首指令
 
-    bool isJcond();          // 是否条件转移指令JT,JF,Jcond
-    bool isJmp();            // 是否直接转移指令JMP,return
-    bool isFirst();          // 是首指令
-    bool isDec();            // 是否是声明
-    bool isExpr();           // 是基本类型表达式运算,可以对指针取值
+    bool isJcond(); // 是否条件转移指令JT,JF,Jcond
+    bool isJmp();   // 是否直接转移指令JMP,return
+    bool isFirst(); // 是首指令
+    bool isDec();   // 是否是声明
+    bool isExpr();  // 是基本类型表达式运算,可以对指针取值
+    bool unknown(); // 不确定运算结果影响的运算(指针赋值，函数调用)
+
     Operator getOp();        // 获取操作符
     InterInst *getTarget();  // 获取跳转指令的目标指令
     Var *getResult();        // 获取返回值

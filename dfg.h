@@ -1,5 +1,6 @@
 #pragma once
 #include "common.h"
+#include "set.h"
 
 /*
     基本块类
@@ -17,6 +18,7 @@ public:
     // 数据流分析信息
     vector<double> inVals;  // 常量传播输入值集合
     vector<double> outVals; // 常量传播输出值集合
+    CopyInfo copyInfo;      // 复写传播数据流信息
 
     // 构造与初始化
     Block(vector<InterInst *> &codes);
