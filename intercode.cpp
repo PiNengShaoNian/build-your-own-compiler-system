@@ -16,7 +16,8 @@ void InterInst::init()
     this->arg1 = NULL;
     this->fun = NULL;
     this->arg2 = NULL;
-    // TODO
+    first = false;
+    isDead = false;
 }
 
 /*
@@ -184,6 +185,15 @@ void InterInst::replace(Operator op, InterInst *tar, Var *arg1, Var *arg2)
     this->target = tar;
     this->arg1 = arg1;
     this->arg2 = arg2;
+}
+
+/*
+    替换操作符，用于将CALL转化为PROC
+*/
+void InterInst::callToProc()
+{
+    this->result = NULL; // 清除返回值
+    this->op = OP_PROC;
 }
 
 /*

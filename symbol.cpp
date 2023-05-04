@@ -11,6 +11,7 @@
 #include "dfg.h"
 #include "constprop.h"
 #include "copyprop.h"
+#include "livevar.h"
 
 // 打印语义错误
 #define SEMERROR(code, name) Error::semError(code, name)
@@ -71,6 +72,7 @@ void Var::clear()
     ptr = NULL; // 没有指向当前变量的指针变量
     index = -1; // 无效索引
     initData = NULL;
+    live = false;
 
     // TODO
     regId = -1; // 默认放在内存
@@ -826,12 +828,29 @@ void Fun::optimize(SymTab *tab)
     ConstPropagation conPro(dfg, tab, paraVar); // 常量传播
     conPro.propagate();
 
-    // 复写传播
-    CopyPropagation cp(dfg);
-    cp.propagate();
-
-    // 优化结果存储在optCode
     dfg->toCode(optCode); // 导出数据流图为中间代码
+    int prevInstsCount = optCode.size();
+
+    while (true)
+    {
+        // 复写传播
+        CopyPropagation cp(dfg);
+        cp.propagate();
+
+        // 活跃变量
+        LiveVar lv(dfg, tab, paraVar);
+        lv.elimateDeadCode();
+
+        // 优化结果存储在optCode
+        dfg->toCode(optCode); // 导出数据流图为中间代码
+
+        // 这轮优化没有减少代码数量，不在继续优化了
+        if (optCode.size() == prevInstsCount)
+            break;
+
+        // 消除了若干死代码，还可能通过复写传播和活跃变量分析删除更多死代码
+        prevInstsCount = optCode.size();
+    }
 }
 
 /*

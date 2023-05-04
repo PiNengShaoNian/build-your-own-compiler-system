@@ -45,3 +45,14 @@ struct CopyInfo
     Set gen;  // 产生复写表达式集合
     Set kill; // 杀死复写表达式集合
 };
+
+/*
+    活跃变量的数据流信息
+*/
+struct LiveInfo
+{
+    Set in;  // 输入集合
+    Set out; // 输出集合
+    Set use; // 使用变量集合——变量的使用先与定值
+    Set def; // 定值变量集合——变量的定值先与使用
+};

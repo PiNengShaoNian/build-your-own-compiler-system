@@ -103,7 +103,9 @@ bool CopyPropagation::translate(Block *block)
     Set tmp = block->copyInfo.in; // 记录B.in作为第一个指令的输入
     for (list<InterInst *>::iterator i = block->insts.begin(); i != block->insts.end(); ++i)
     {
-        InterInst *inst = *i;          // 取出指令
+        InterInst *inst = *i; // 取出指令
+        if (inst->isDead)     // 跳过死指令
+            continue;
         Set &in = inst->copyInfo.in;   // 指令的in
         Set &out = inst->copyInfo.out; // 指令的out
         in = tmp;                      // 设置指令的in

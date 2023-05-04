@@ -31,6 +31,8 @@ public:
     vector<double> inVals;  // 常量传播in集合
     vector<double> outVals; // 常量传播out集合
     CopyInfo copyInfo;      // 复写传播数据流信息
+    LiveInfo liveInfo;      // 活跃变量数据流信息
+    bool isDead;            // 标识指令是否是死代码
 
     // 构造
     InterInst(Operator op, Var *rs, Var *arg1, Var *arg2 = NULL);                  // 一般运算指令
@@ -53,6 +55,7 @@ public:
     bool unknown(); // 不确定运算结果影响的运算(指针赋值，函数调用)
 
     Operator getOp();        // 获取操作符
+    void callToProc();       // 替换操作符，用于将CALL转化为PROC
     InterInst *getTarget();  // 获取跳转指令的目标指令
     Var *getResult();        // 获取返回值
     Var *getArg1();          // 获取第一个参数

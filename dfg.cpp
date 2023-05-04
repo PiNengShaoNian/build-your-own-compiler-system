@@ -217,7 +217,8 @@ void DFG::toCode(list<InterInst *> &opt)
             for (list<InterInst *>::iterator it = blocks[i]->insts.begin();
                  it != blocks[i]->insts.end(); ++it)
             {
-                // TODO
+                if ((*it)->isDead) // 跳过死代码
+                    continue;
                 tmpInsts.push_back(*it); // 抽取有效指令
             }
             opt.splice(opt.end(), tmpInsts); // 合并有效基本快
