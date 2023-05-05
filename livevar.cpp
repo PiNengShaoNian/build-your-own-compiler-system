@@ -169,6 +169,28 @@ void LiveVar::analyse()
 }
 
 /*
+    根据提供的liveout集合提取优化后的变量集合——冲突变量
+*/
+vector<Var *> LiveVar::getCoVar(Set liveout)
+{
+    vector<Var *> coVar;
+    for (int i = 0; i < varList.size(); i++)
+    {
+        if (liveout.get(i)) // 将活跃的变量保存
+            coVar.push_back(varList[i]);
+    }
+    return coVar;
+}
+
+/*
+    返回空集对象
+*/
+Set &LiveVar::getE()
+{
+    return E;
+}
+
+/*
     死代码消除
 */
 void LiveVar::elimateDeadCode(int stop)

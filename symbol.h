@@ -94,7 +94,8 @@ public:
     bool live;       // 记录变量的活跃性
 
     // 寄存器分配信息
-    int regId; // 分配的寄存器编号，-1表示在内存，偏移地址为offset!!!
+    int regId;  // 分配的寄存器编号，-1表示在内存，偏移地址为offset!!!
+    bool inMem; // 被取地址的变量的标记，不分配寄存器！
 };
 
 /*******************************************************************************
@@ -141,6 +142,7 @@ public:
     void setReturnPoint(InterInst *inst); // 设置函数返回点
     InterInst *getReturnPoint();          // 获取函数返回点
     int getMaxDep();                      // 获取最大栈帧深度
+    void setMaxDep(int dep);              // 设置最大栈帧深度
     void optimize(SymTab *tab);           // 执行优化操作
 
     // 外部调用掉口

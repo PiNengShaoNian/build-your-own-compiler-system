@@ -12,6 +12,7 @@
 #include "constprop.h"
 #include "copyprop.h"
 #include "livevar.h"
+#include "alloc.h"
 
 // 打印语义错误
 #define SEMERROR(code, name) Error::semError(code, name)
@@ -830,6 +831,7 @@ void Fun::optimize(SymTab *tab)
 
     dfg->toCode(optCode); // 导出数据流图为中间代码
     int prevInstsCount = optCode.size();
+    LiveVar *lv = NULL;
 
     while (true)
     {
@@ -838,8 +840,10 @@ void Fun::optimize(SymTab *tab)
         cp.propagate();
 
         // 活跃变量
-        LiveVar lv(dfg, tab, paraVar);
-        lv.elimateDeadCode();
+        if (lv)
+            delete lv;
+        lv = new LiveVar(dfg, tab, paraVar);
+        lv->elimateDeadCode();
 
         // 优化结果存储在optCode
         dfg->toCode(optCode); // 导出数据流图为中间代码
@@ -851,6 +855,11 @@ void Fun::optimize(SymTab *tab)
         // 消除了若干死代码，还可能通过复写传播和活跃变量分析删除更多死代码
         prevInstsCount = optCode.size();
     }
+
+    // 寄存器分配和局部变量栈地址重新计算
+    CoGraph cg(optCode, paraVar, lv, this); // 初始化冲突图
+    cg.alloc();                             // 重新分配变量的寄存器和栈帧地址
+    delete lv;
 }
 
 /*
@@ -859,6 +868,16 @@ void Fun::optimize(SymTab *tab)
 int Fun::getMaxDep()
 {
     return maxDepth;
+}
+
+/*
+    设置最大栈帧深度
+*/
+void Fun::setMaxDep(int dep)
+{
+    maxDepth = dep;
+    // 设置函数栈帧被重定位标记，用于生成不同的栈帧保护代码
+    relocated = true;
 }
 
 /*

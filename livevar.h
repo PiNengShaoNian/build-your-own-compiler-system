@@ -21,4 +21,7 @@ public:
     void analyse();                                     // 活跃变量数据流分析
     LiveVar(DFG *g, SymTab *t, vector<Var *> &paraVar); // 构造函数
     void elimateDeadCode(int stop = false);             // 死代码消除
+
+    Set &getE();                         // 返回空集
+    vector<Var *> getCoVar(Set liveout); // 根据提供的liveout集合提取优化后的变量集合——冲突变量
 };

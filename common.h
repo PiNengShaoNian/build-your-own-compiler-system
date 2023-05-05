@@ -217,3 +217,4 @@ class InterInst;
 class InterCode;
 class Block;
 class DFG;
+class LiveVar;

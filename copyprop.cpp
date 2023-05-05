@@ -18,6 +18,10 @@ CopyPropagation::CopyPropagation(DFG *g) : dfg(g)
         }
     }
 
+    // 没有复写表达式，无法进行进一步优化了，在这里提前退出
+    if (copyExpr.size() == 0)
+        return;
+
     int index = 0;
     for (int i = 0; i < copyExpr.size(); ++i)
     {
