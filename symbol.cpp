@@ -13,6 +13,7 @@
 #include "copyprop.h"
 #include "livevar.h"
 #include "alloc.h"
+#include "peephole.h"
 
 // 打印语义错误
 #define SEMERROR(code, name) Error::semError(code, name)
@@ -667,6 +668,11 @@ void Fun::genAsm(FILE *file)
     Selector sl(code, il); // 指令选择器
 
     sl.select();
+
+    // 对ILOC代码进行窥孔优化
+    PeepHole ph(il); // 窥孔优化器
+    if (Args::opt)
+        ph.filter(); // 优化过滤代码
 
     il.outPut(file);
 }

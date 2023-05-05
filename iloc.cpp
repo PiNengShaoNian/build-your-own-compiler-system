@@ -4,8 +4,28 @@
 #include <sstream>
 
 Arm::Arm(string op, string rs, string a1, string a2, string add)
-    : opcode(op), result(rs), arg1(a1), arg2(a2), addition(add)
+    : opcode(op), result(rs), arg1(a1), arg2(a2), addition(add), dead(false)
 {
+}
+
+/*
+    指令内容替换
+*/
+void Arm::replace(string op, string rs, string a1, string a2, string add)
+{
+    opcode = op;
+    result = rs;
+    arg1 = a1;
+    arg2 = a2;
+    addition = add;
+}
+
+/*
+    设置为无效指令
+*/
+void Arm::setDead()
+{
+    dead = true;
 }
 
 /*
@@ -13,7 +33,8 @@ Arm::Arm(string op, string rs, string a1, string a2, string add)
 */
 string Arm::outPut()
 {
-    // TODO
+    if (dead)
+        return "";
     if (opcode == "")
         return ""; // 占位指令
     string ret = opcode + " " + result;
@@ -398,4 +419,12 @@ void ILoc::outPut(FILE *file)
         if (s != "")
             fprintf(file, "\t%s\n", s.c_str());
     }
+}
+
+/*
+    获取代码
+*/
+list<Arm *> &ILoc::getCode()
+{
+    return code;
 }

@@ -50,3 +50,13 @@ bool Plat::isDisp(int num)
 {
     return num < 4096 && num > -4096;
 }
+
+/*
+    判断是否是合法的寄存器名
+*/
+bool Plat::isReg(string s)
+{
+    return s == "r0" || s == "r1" || s == "r2" || s == "r3" || s == "r4" || s == "r5" ||
+           s == "r6" || s == "r7" || s == "r8" || s == "r9" || s == "r10" || s == "fp" ||
+           s == "ip" || s == "sp" || s == "lr" || s == "pc";
+}

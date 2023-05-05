@@ -6,12 +6,15 @@
 */
 struct Arm
 {
+    bool dead;       // 标识代码是否无效
     string opcode;   // 操作码
     string result;   // 结果
     string arg1;     // 操作数1
     string arg2;     // 操作数2
     string addition; // 附加信息
     Arm(string op, string rs = "", string a1 = "", string a2 = "", string add = "");
+    void replace(string op, string rs = "", string a1 = "", string a2 = "", string add = "");
+    void setDead();  // 设置无效
     string outPut(); // 输出函数
 };
 
@@ -83,6 +86,6 @@ public:
         功能函数
     */
     void outPut(FILE *file); // 输出汇编
-
+    list<Arm *> &getCode();  // 获取代码
     ~ILoc();
 };

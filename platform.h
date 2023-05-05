@@ -11,6 +11,7 @@ class Plat
 public:
     static bool constExpr(int num); // 同时处理正数和负数
     static bool isDisp(int num);    // 判定是否是合法的偏移
+    static bool isReg(string s);    // 判断是否是合法的寄存器名
     /*
      进栈指令序列:
          mov ip,sp
