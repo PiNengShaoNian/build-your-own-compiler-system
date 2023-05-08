@@ -9,9 +9,12 @@ bool showAss = false; // 显示汇编信息
 */
 int main(int argc, char *argv[])
 {
-    finName = argv[1];
-    showAss = (argv[2][0] == 'y');
-    fin = fopen((finName + ".s").c_str(), "r"); // 输入文件
-    fclose(fin);
-    return 0;
+  finName = argv[1];
+  showAss = (argv[2][0] == 'y');
+  fin = fopen((finName + ".s").c_str(), "r"); // 输入文件
+
+  program();
+
+  fclose(fin);
+  return 0;
 }

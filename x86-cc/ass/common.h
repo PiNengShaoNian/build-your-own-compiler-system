@@ -79,6 +79,20 @@ enum symbol // 所有符号的枚举
 /**  *****************************************************************************************************************************
  ***全局声明***
  ********************************************************************************************************************************/
-extern FILE *fin; // 全局变量，文件输入指针
+extern FILE *fin;       // 全局变量，文件输入指针
+extern enum symbol sym; // 当前符号，getSym()->给语法分析使用
+extern char str[];      // 记录当前string，给erorr处理
+extern char id[];       // 记录当前ident
+extern int num;         // 记录当前num
+#define immd 1
+#define memr 3
+#define regs 2
+
+extern int lineNum; // 记录行数
+
+extern int scanLop;
+
+int getSym();
+void program();
 
 #endif
