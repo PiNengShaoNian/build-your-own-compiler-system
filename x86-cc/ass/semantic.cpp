@@ -109,7 +109,28 @@ lb_record *Table::getlb(string name)
 
 void Table::switchSeg()
 {
-    // TODO
+    if (scanLop == 1)
+    {
+        dataLen += (4 - dataLen % 4) % 4;
+        obj.addShdr(curSeg, lb_record::curAddr); // 新建一个段
+        if (curSeg != ".bss")
+            dataLen += lb_record::curAddr;
+    }
+    curSeg = "";
+    curSeg += id;           // 切换下一个段名
+    lb_record::curAddr = 0; // 清0段偏移
+}
+
+void Table::exportSyms()
+{
+    hash_map<string, lb_record *, string_hash>::iterator lb_i, lb_iend;
+    lb_iend = lb_map.end();
+    for (lb_i = lb_map.begin(); lb_i != lb_iend; lb_i++)
+    {
+        lb_record *lr = lb_i->second;
+        if (!lr->isEqu) // equ不用导出
+            obj.addSym(lr);
+    }
 }
 
 Table::~Table() // 注销所有空间

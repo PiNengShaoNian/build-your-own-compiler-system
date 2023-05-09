@@ -30,6 +30,7 @@ int wait = 0; // 指导nextToken是否继续取符号，每次设置只能作用
 */
 enum symbol token;
 string curSeg = ""; // 当前段名称
+int dataLen = 0;    // 有效数据长度
 
 int nextToken()
 {
@@ -80,8 +81,8 @@ void program()   // untest:调用之前是否提前测试了符号
     if (nextToken() == -1 || token == null) // 文件末尾 #
     {
         // cout<<"代码长度="<<lb_record::curAddr-textAddr<<endl;
-        // table.exportSyms(); // 导出符号表
-        // obj.printAll();
+        table.exportSyms(); // 导出符号表
+        obj.printAll();
         return;
     }
     else
@@ -207,7 +208,7 @@ void type(int cont[], int &cont_len, int len)
         {
             if (!lr->isEqu)
             {
-                // TODO
+                obj.addRel(curSeg, lb_record::curAddr + cont_len * len, name, R_386_32); // 数据段重定位位置很好确定，直接添加重定位项即可
             }
         }
         cont_len++;

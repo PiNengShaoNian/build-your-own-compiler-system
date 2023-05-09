@@ -85,9 +85,14 @@ extern enum symbol sym; // 当前符号，getSym()->给语法分析使用
 extern char str[];      // 记录当前string，给erorr处理
 extern char id[];       // 记录当前ident
 extern int num;         // 记录当前num
+extern bool showAss;    // 显示汇编信息
+class Elf_file;         // elf文件类
 class Table;
+struct lb_record;
 extern Table table;
 extern string curSeg; // 当前段名称
+extern int dataLen;   // 有效数据长度
+extern Elf_file obj;  // 输出文件
 #define immd 1
 #define memr 3
 #define regs 2
