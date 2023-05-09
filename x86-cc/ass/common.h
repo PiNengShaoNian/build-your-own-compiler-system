@@ -2,6 +2,7 @@
 #define _COMMON_H_
 #include <stdio.h>
 #include <iostream>
+#include <ext/hash_map>
 using namespace std;
 /**  *****************************************************************************************************************************
  ***类型定义***
@@ -84,6 +85,9 @@ extern enum symbol sym; // 当前符号，getSym()->给语法分析使用
 extern char str[];      // 记录当前string，给erorr处理
 extern char id[];       // 记录当前ident
 extern int num;         // 记录当前num
+class Table;
+extern Table table;
+extern string curSeg; // 当前段名称
 #define immd 1
 #define memr 3
 #define regs 2
@@ -94,5 +98,14 @@ extern int scanLop;
 
 int getSym();
 void program();
+
+// 需要自己写hash函数
+struct string_hash
+{
+    size_t operator()(const string &str) const
+    {
+        return __gnu_cxx::__stl_hash_string(str.c_str());
+    }
+};
 
 #endif

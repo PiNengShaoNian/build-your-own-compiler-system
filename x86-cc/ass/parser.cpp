@@ -1,4 +1,5 @@
 #include "common.h"
+#include "semantic.h"
 
 /**  *****************************************************************************************************************************
  ***语法分析***
@@ -28,6 +29,8 @@ int wait = 0; // 指导nextToken是否继续取符号，每次设置只能作用
   返回值:编译结束返回-1，一般情况现返回0.
 */
 enum symbol token;
+string curSeg = ""; // 当前段名称
+
 int nextToken()
 {
     if (wait == 1)
@@ -77,6 +80,8 @@ void program()   // untest:调用之前是否提前测试了符号
     if (nextToken() == -1 || token == null) // 文件末尾 #
     {
         // cout<<"代码长度="<<lb_record::curAddr-textAddr<<endl;
+        // table.exportSyms(); // 导出符号表
+        // obj.printAll();
         return;
     }
     else
@@ -90,7 +95,7 @@ void program()   // untest:调用之前是否提前测试了符号
             break;
         case a_sec:
             match(ident);
-            // TODO
+            table.switchSeg();
             break;
         case a_glb:
             // 定义全局入口符号，这里默认是_start,链接器默认也是lit，这里不做具体处理
@@ -100,6 +105,7 @@ void program()   // untest:调用之前是否提前测试了符号
             BACK
             inst();
         }
+        program();
     }
 }
 
@@ -113,19 +119,22 @@ void lbtail(string lbName)
         basetail(lbName, num);
         break;
     case a_equ:
+    {
         match(number);
-        {
-            // TODO
-        }
+        lb_record *lr = new lb_record(lbName, num);
+        table.addlb(lr);
         break;
+    }
     case colon:
     {
-        // TODO
+        lb_record *lr = new lb_record(lbName, false);
+        table.addlb(lr);
+        break;
     }
     break;
     default:
-        BACK
-            basetail(lbName, 1);
+        BACK;
+        basetail(lbName, 1);
     }
 }
 
@@ -161,7 +170,8 @@ void values(string lbName, int times, int len)
     int cont_len = 0;
     type(cont, cont_len, len);
     valtail(cont, cont_len, len);
-    // TODO
+    lb_record *lr = new lb_record(lbName, times, len, cont, cont_len);
+    table.addlb(lr);
 }
 
 void type(int cont[], int &cont_len, int len)
@@ -190,7 +200,16 @@ void type(int cont[], int &cont_len, int len)
     {
         string name = "";
         name += id;
-        // TODO
+        lb_record *lr = table.getlb(name);
+        cont[cont_len] = lr->addr; // 把地址作为占位，第二次扫描还会刷新，为该位置生成重定位项(equ除外)
+        // 处理数据段重定位项
+        if (scanLop == 2) // 第二次扫描记录重定位项
+        {
+            if (!lr->isEqu)
+            {
+                // TODO
+            }
+        }
         cont_len++;
     }
     break;
