@@ -51,7 +51,16 @@ int nextToken()
                 token = null;
                 if (scanLop == 1) // 准备第二编扫描
                 {
-                    // TODO
+                    table.switchSeg(); // 第一次扫描最后记录以下最后一个段信息
+                    fclose(fin);
+                    fin = fopen((finName + ".s").c_str(), "r"); // 输入文件
+                    oldCh = ch;
+                    ch = ' ';
+                    lineLen = 0;
+                    chAtLine = 0;
+                    lineNum = 0;
+                    scanLop++;
+                    continue;
                 }
                 return -1;
             }
@@ -233,9 +242,12 @@ void valtail(int cont[], int &cont_len, int len)
     }
 }
 
+ModRM modrm;
+SIB sib;
+Inst instr;
 void inst()
 {
-    // TODO
+    instr.init();
     int len = 0;
     nextToken();
     if (token >= i_mov && token <= i_lea)
@@ -246,19 +258,19 @@ void inst()
         opr(regNum, d_type, len);
         match(comma);
         opr(regNum, s_type, len);
-        // TODO
+        gen2op(t, d_type, s_type, len);
     }
     else if (token >= i_call && token <= i_pop)
     {
         symbol t = token;
         int type = 0, regNum = 0;
         opr(regNum, type, len);
-        // TODO
+        gen1op(t, type, len);
     }
     else if (token == i_ret)
     {
         symbol t = token;
-        // TODO
+        gen0op(t);
     }
     else
     {
@@ -266,20 +278,32 @@ void inst()
     }
 }
 
+lb_record *relLb = NULL; // 记录指令中可能需要重定位的标签（使用了符号）
 void opr(int &regNum, int &type, int &len)
 {
     string name = "";
+    lb_record *lr;
     nextToken();
     switch (token)
     {
     case number: // 立即数
         type = immd;
-        // TODO
+        instr.imm32 = num;
         break;
     case ident: // 立即数
         type = immd;
         name += id;
-        // TODO
+        lr = table.getlb(name);
+        instr.imm32 = lr->addr;
+        // 处理数据段重定位项
+        if (scanLop == 2) // 第二次扫描记录重定位项
+        {
+            if (!lr->isEqu) // 不是equ
+            {
+                // 记录符号
+                relLb = lr;
+            }
+        }
         break;
     case lbrac: // 内存寻址
         type = memr;
@@ -289,13 +313,23 @@ void opr(int &regNum, int &type, int &len)
     case subs: // 负立即数
         type = immd;
         match(number);
-        // TODO
+        instr.imm32 = -num;
         break;
     default: // 寄存器操作数 11 rm=des reg=src
         type = regs;
-        BACK
-            len = reg();
-        // TODO
+        BACK;
+        len = reg();
+        if (regNum != 0) // 双reg，将原来reg写入rm作为目的操作数，本次写入reg
+        {
+            modrm.mod = 3; // 双寄存器模式
+            // 因为统一采用opcode rm,r 的指令格式，比如mov rm32,r32就使用0x89,若是使用opcode r,rm 形式则不需要
+            modrm.rm = modrm.reg;
+            modrm.reg = token - br_al - (1 - len % 4) * 8; // 计算寄存器的编码
+        }
+        else // 第一次出现reg，临时在reg中，若双reg这次是目的寄存器，需要交换位置
+        {
+            modrm.reg = token - br_al - (1 - len % 4) * 8; // 计算寄存器的编码
+        }
         regNum++;
     }
 }
@@ -310,15 +344,29 @@ void mem()
 void addr()
 {
     string name = "";
+    lb_record *lr;
     nextToken();
     switch (token)
     {
     case number: // 直接寻址 00 xxx 101 disp32
-        // TODO
+        modrm.mod = 0;
+        modrm.rm = 5;
+        instr.setDisp(num, 4);
         break;
     case ident: // 直接寻址
-        // TODO
+        modrm.mod = 0;
+        modrm.rm = 5;
         name += id;
+        lr = table.getlb(name);
+        instr.setDisp(lr->addr, 4);
+        if (scanLop == 2) // 第二次扫描记录重定位项
+        {
+            if (!lr->isEqu) // 不是equ
+            {
+                // 记录符号
+                relLb = lr;
+            }
+        }
         break;
     default: // 寄存器寻址
         BACK int type = reg();
@@ -355,7 +403,25 @@ void regaddr(symbol basereg, const int type)
     }
     else // 寄存器间址 00 xxx rrr <esp ebp特殊考虑>
     {
-        // TODO
+        if (basereg == dr_esp) //[esp]
+        {
+            modrm.mod = 0;
+            modrm.rm = 4; // 引导SIB
+            sib.scale = 0;
+            sib.index = 4;
+            sib.base = 4;
+        }
+        else if (basereg == dr_ebp) //[ebp],生成汇编代码中未出现
+        {
+            modrm.mod = 1; // 8-bit 0 disp，或者mod=2 32-bit 0 disp
+            modrm.rm = 5;
+            instr.setDisp(0, 1);
+        }
+        else // 一般寄存器
+        {
+            modrm.mod = 0;
+            modrm.rm = basereg - br_al - (1 - type % 4) * 8;
+        }
         BACK return;
     }
 }
@@ -378,10 +444,34 @@ void regaddrtail(symbol basereg, const int type, symbol sign)
     switch (token)
     {
     case number: // 寄存器基址寻址 01/10 xxx rrr disp8/disp32
-                 // TODO
+        if (sign == subs)
+            num = -num;
+        if (num >= -128 && num < 128) // disp8
+        {
+            modrm.mod = 1;
+            instr.setDisp(num, 1);
+        }
+        else
+        {
+            modrm.mod = 2;
+            instr.setDisp(num, 4);
+        }
+        modrm.rm = basereg - br_al - (1 - type % 4) * 8;
+
+        if (basereg == dr_esp) // sib
+        {
+            modrm.rm = 4; // 引导SIB
+            sib.scale = 0;
+            sib.index = 4;
+            sib.base = 4;
+        }
         break;
     default: // 基址变址寻址 00 xxx 100 00=scale rrr2=index rrr1=base,不会发生在esp和ebp上，没有生成这样的指令
         BACK int typei = reg();
-        // TODO
+        modrm.mod = 0;
+        modrm.rm = 4;
+        sib.scale = 0;
+        sib.index = token - br_al - (1 - typei % 4) * 8;
+        sib.base = basereg - br_al - (1 - type % 4) * 8;
     }
 }

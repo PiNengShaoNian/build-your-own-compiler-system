@@ -1,6 +1,7 @@
 #include "common.h"
 #include <stdlib.h>
-FILE *fin = NULL; // 全局变量，文件输入指针
+FILE *fin = NULL;  // 全局变量，文件输入指针
+FILE *fout = NULL; // 全局变量，文件输出指针
 
 string finName;       // 输入文件名
 bool showAss = false; // 显示汇编信息
@@ -11,7 +12,8 @@ int main(int argc, char *argv[])
 {
   finName = argv[1];
   showAss = (argv[2][0] == 'y');
-  fin = fopen((finName + ".s").c_str(), "r"); // 输入文件
+  fin = fopen((finName + ".s").c_str(), "r");  // 输入文件
+  fout = fopen((finName + ".t").c_str(), "w"); // 临时输出文件，供代码段使用
 
   program();
 

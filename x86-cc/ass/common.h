@@ -81,7 +81,9 @@ enum symbol // 所有符号的枚举
  ***全局声明***
  ********************************************************************************************************************************/
 extern FILE *fin;       // 全局变量，文件输入指针
+extern FILE *fout;      // 全局变量，文件输出指针
 extern enum symbol sym; // 当前符号，getSym()->给语法分析使用
+extern string finName;  // 文件名
 extern char str[];      // 记录当前string，给erorr处理
 extern char id[];       // 记录当前ident
 extern int num;         // 记录当前num
@@ -90,12 +92,24 @@ class Elf_file;         // elf文件类
 class Table;
 struct lb_record;
 extern Table table;
-extern string curSeg; // 当前段名称
-extern int dataLen;   // 有效数据长度
-extern Elf_file obj;  // 输出文件
+extern string curSeg;    // 当前段名称
+extern int dataLen;      // 有效数据长度
+extern Elf_file obj;     // 输出文件
+extern lb_record *relLb; // 记录指令中可能需要重定位的标签
+struct ModRM;
+extern ModRM modrm;
+struct SIB;
+extern SIB sib;
+struct Inst;
+extern Inst instr;
 #define immd 1
 #define memr 3
 #define regs 2
+
+extern char ch;
+extern char oldCh;
+extern int chAtLine;
+extern int lineLen;
 
 extern int lineNum; // 记录行数
 
@@ -103,6 +117,10 @@ extern int scanLop;
 
 int getSym();
 void program();
+void writeBytes(int value, int len); // 按照小端顺序输出任意不大于4字节长度数据
+void gen2op(symbol opt, int des_t, int src_t, int len);
+void gen1op(symbol opt, int opr_t, int len);
+void gen0op(symbol opt);
 
 // 需要自己写hash函数
 struct string_hash
