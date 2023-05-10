@@ -1,5 +1,7 @@
 #include "common.h"
 #include <stdlib.h>
+#include "semantic.h"
+
 FILE *fin = NULL;  // 全局变量，文件输入指针
 FILE *fout = NULL; // 全局变量，文件输出指针
 
@@ -17,6 +19,9 @@ int main(int argc, char *argv[])
 
   program();
 
+  obj.writeElf(); // 输出头
   fclose(fin);
+  fclose(fout);
+
   return 0;
 }

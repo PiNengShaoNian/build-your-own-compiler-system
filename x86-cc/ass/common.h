@@ -92,9 +92,9 @@ class Elf_file;         // elf文件类
 class Table;
 struct lb_record;
 extern Table table;
-extern string curSeg;    // 当前段名称
-extern int dataLen;      // 有效数据长度
-extern Elf_file obj;     // 输出文件
+extern string curSeg; // 当前段名称
+extern int dataLen;   // 有效数据长度
+extern Elf_file obj;  // 输出文件
 extern lb_record *relLb; // 记录指令中可能需要重定位的标签
 struct ModRM;
 extern ModRM modrm;

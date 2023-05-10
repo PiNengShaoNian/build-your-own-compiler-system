@@ -31,6 +31,18 @@ int Elf_file::getSegIndex(string segName)
     return 0;
 }
 
+int Elf_file::getSymIndex(string symName)
+{
+    int index = 0;
+    for (int i = 0; i < symNames.size(); ++i)
+    {
+        if (symNames[i] == symName) // 找到符号
+            break;
+        ++index;
+    }
+    return index;
+}
+
 // sh_name和sh_offset都需要重新计算
 void Elf_file::addShdr(string sh_name, int size)
 {
@@ -173,6 +185,186 @@ Elf_file::~Elf_file()
         delete shstrtab;
     if (strtab)
         delete strtab;
+}
+
+void Elf_file::writeElf()
+{
+    fclose(fout);
+    fout = fopen((finName + ".o").c_str(), "w"); // 输出文件
+    assmObj();                                   // 组装文件
+    fwrite(&ehdr, ehdr.e_ehsize, 1, fout);       // 输出elf文件头
+
+    // 输出.text
+    fclose(fin);
+    fin = fopen((finName + ".t").c_str(), "r"); // 临时输出文件，供代码段使用
+    char buffer[1024] = {0};
+    int f = -1;
+    while (f != 0)
+    {
+        f = fread(buffer, 1, 1024, fin);
+        fwrite(buffer, 1, f, fout);
+    }
+
+    padSeg(".text", ".data");
+    table.write(); //.data
+    padSeg(".data", ".bss");
+    //.bss不用输出，对齐即可
+    //.shstrtab，段表，符号表，.strtab，.rel.text，.rel.data
+    obj.writeElfTail(); // 输出剩下的尾部
+}
+
+void Elf_file::padSeg(string first, string second) // 填充段间的空隙
+{
+    char pad[1] = {0};
+    int padNum = shdrTab[second]->sh_offset - (shdrTab[first]->sh_offset + shdrTab[first]->sh_size);
+    while (padNum--)
+    {
+        fwrite(pad, 1, 1, fout); // 填充
+    }
+}
+
+void Elf_file::assmObj()
+{
+    //-----elf头
+    int *p_id = (int *)ehdr.e_ident;
+    *p_id = 0x464c457f;
+    p_id++;
+    *p_id = 0x010101;
+    p_id++;
+    *p_id = 0;
+    p_id++;
+    *p_id = 0;
+    ehdr.e_type = ET_REL;
+    ehdr.e_machine = EM_386;
+    ehdr.e_version = EV_CURRENT;
+    ehdr.e_entry = 0;
+    ehdr.e_phoff = 0;
+    ehdr.e_flags = 0;
+    ehdr.e_ehsize = 52;
+    ehdr.e_phentsize = 0;
+    ehdr.e_phnum = 0;
+    ehdr.e_shentsize = 40;
+    ehdr.e_shnum = 9;
+    ehdr.e_shstrndx = 4;
+    //-----填充.shstrtab数据
+    int curOff = 52 + dataLen;
+    shstrtabSize = 51;
+    char *str = shstrtab = new char[shstrtabSize];
+    int index = 0;
+    // 段表串名与索引映射
+    hash_map<string, int, string_hash> shstrIndex;
+    shstrIndex[".rel.text"] = index;
+    strcpy(str + index, ".rel.text");
+    shstrIndex[".text"] = index + 4;
+    index += 10;
+    shstrIndex[""] = index - 1;
+    shstrIndex[".rel.data"] = index;
+    strcpy(str + index, ".rel.data");
+    shstrIndex[".data"] = index + 4;
+    index += 10;
+    shstrIndex[".bss"] = index;
+    strcpy(str + index, ".bss");
+    index += 5;
+    shstrIndex[".shstrtab"] = index;
+    strcpy(str + index, ".shstrtab");
+    index += 10;
+    shstrIndex[".symtab"] = index;
+    strcpy(str + index, ".symtab");
+    index += 8;
+    shstrIndex[".strtab"] = index;
+    strcpy(str + index, ".strtab");
+    index += 8;
+
+    // 添加.shstrtab
+    addShdr(".shstrtab", SHT_STRTAB, 0, 0, curOff, shstrtabSize, SHN_UNDEF, 0, 1, 0); //.shstrtab
+
+    //-----定位段表
+    curOff += shstrtabSize;
+    ehdr.e_shoff = curOff;
+    //-----添加符号表
+    curOff += 9 * 40; // 8个段+空段，段表字符串表偏移，符号表表偏移
+    //.symtab,sh_link 代表.strtab索引，默认在.symtab之后,sh_info不能确定
+    addShdr(".symtab", SHT_SYMTAB, 0, 0, curOff, symNames.size() * 16, 0, 0, 1, 16);
+    shdrTab[".symtab"]->sh_link = getSegIndex(".symtab") + 1; //.strtab默认在.symtab之后
+
+    //-----添加.strtab
+    strtabSize = 0;                           // 字符串表大小
+    for (int i = 0; i < symNames.size(); ++i) // 遍历所有符号
+    {
+        strtabSize += symNames[i].length() + 1;
+    }
+    curOff += symNames.size() * 16;                                               //.strtab偏移
+    addShdr(".strtab", SHT_STRTAB, 0, 0, curOff, strtabSize, SHN_UNDEF, 0, 1, 0); //.strtab
+
+    // 填充strtab数据
+    str = strtab = new char[strtabSize];
+    index = 0;
+    // 串表与符号表名字更新
+    for (int i = 0; i < symNames.size(); ++i)
+    {
+        symTab[symNames[i]]->st_name = index;
+        strcpy(str + index, symNames[i].c_str());
+        index += (symNames[i].length() + 1);
+    }
+
+    // 处理重定位表
+    for (int i = 0; i < relTab.size(); i++)
+    {
+        Elf32_Rel *rel = new Elf32_Rel();
+        rel->r_offset = relTab[i]->offset;
+        rel->r_info = ELF32_R_INFO((Elf32_Word)getSymIndex(relTab[i]->lbName), relTab[i]->type);
+        if (relTab[i]->tarSeg == ".text")
+            relTextTab.push_back(rel);
+        else if (relTab[i]->tarSeg == ".data")
+            relDataTab.push_back(rel);
+    }
+
+    //-----添加.rel.text
+    curOff += strtabSize;
+    addShdr(".rel.text", SHT_REL, 0, 0, curOff,
+            relTextTab.size() * 8, getSegIndex(".symtab"),
+            getSegIndex(".text"), 1, 8); //.rel.text
+
+    //-----添加.rel.data
+    curOff += relTextTab.size() * 8;
+    addShdr(".rel.data", SHT_REL, 0, 0, curOff,
+            relDataTab.size() * 8, getSegIndex(".symtab"),
+            getSegIndex(".data"), 1, 8); //.rel.data
+
+    // 更新段表name
+    for (int i = 0; i < shdrNames.size(); ++i)
+    {
+        int index = shstrIndex[shdrNames[i]];
+        shdrTab[shdrNames[i]]->sh_name = index;
+    }
+}
+
+void Elf_file::writeElfTail()
+{
+    fwrite(shstrtab, shstrtabSize, 1, fout);   //.shstrtab
+    for (int i = 0; i < shdrNames.size(); ++i) // 段表
+    {
+        Elf32_Shdr *sh = shdrTab[shdrNames[i]];
+        fwrite(sh, ehdr.e_shentsize, 1, fout);
+    }
+    for (int i = 0; i < symNames.size(); ++i) // 符号表
+    {
+        Elf32_Sym *sym = symTab[symNames[i]];
+        fwrite(sym, sizeof(Elf32_Sym), 1, fout);
+    }
+    fwrite(strtab, strtabSize, 1, fout);        //.strtab
+    for (int i = 0; i < relTextTab.size(); ++i) //.rel.text
+    {
+        Elf32_Rel *rel = relTextTab[i];
+        fwrite(rel, sizeof(Elf32_Rel), 1, fout);
+        delete rel;
+    }
+    for (int i = 0; i < relDataTab.size(); ++i) //.rel.data
+    {
+        Elf32_Rel *rel = relDataTab[i];
+        fwrite(rel, sizeof(Elf32_Rel), 1, fout);
+        delete rel;
+    }
 }
 
 void Elf_file::printAll()

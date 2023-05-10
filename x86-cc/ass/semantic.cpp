@@ -54,6 +54,17 @@ lb_record::lb_record(string n, int t, int l, int c[], int c_l) // L times 10 dw 
     lb_record::curAddr += t * l * c_l; // 修改地址
 }
 
+void lb_record::write()
+{
+    for (int i = 0; i < times; i++)
+    {
+        for (int j = 0; j < cont_len; j++)
+        {
+            writeBytes(cont[j], len);
+        }
+    }
+}
+
 lb_record::~lb_record()
 {
     if (cont != NULL)
@@ -130,6 +141,22 @@ void Table::exportSyms()
         lb_record *lr = lb_i->second;
         if (!lr->isEqu) // equ不用导出
             obj.addSym(lr);
+    }
+}
+
+void Table::write()
+{
+    for (int i = 0; i < defLbs.size(); i++)
+        defLbs[i]->write();
+
+    if (showAss)
+    {
+        // 只输出定义符号
+        cout << "------------定义符号------------" << endl;
+        for (int i = 0; i < defLbs.size(); i++)
+        {
+            cout << defLbs[i]->lbName << endl;
+        }
     }
 }
 
