@@ -16,6 +16,15 @@ RelItem::~RelItem()
     delete rel;
 }
 
+void Elf_file::getData(char *buf, Elf32_Off offset, Elf32_Word size)
+{
+    FILE *fp = fopen(elf_dir, "rb");
+    rewind(fp);
+    fseek(fp, offset, 0);    // 读取位置
+    fread(buf, size, 1, fp); // 读取数据
+    fclose(fp);
+}
+
 Elf_file::Elf_file()
 {
     shstrtab = NULL;
