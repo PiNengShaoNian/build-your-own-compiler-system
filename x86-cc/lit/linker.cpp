@@ -69,6 +69,45 @@ void SegList::allocAddr(string name, unsigned int &base, unsigned int &off)
         off += size;
 }
 
+/*
+    relAddr:重定位虚拟地址
+    type:重定位类型
+    symAddr:重定位符号的虚拟地址
+*/
+void SegList::relocAddr(unsigned int relAddr, unsigned char type, unsigned int symAddr)
+{
+    unsigned int relOffset = relAddr - baseAddr; // 同类合并段的数据偏移
+
+    // 查找修正地址所在位置
+    Block *b = NULL;
+    for (int i = 0; i < blocks.size(); ++i)
+    {
+        if (blocks[i]->offset <= relOffset && blocks[i]->offset + blocks[i]->size > relOffset)
+        {
+            b = blocks[i];
+            break; // 找到了
+        }
+    }
+    // 处理字节为b->data[relOffset-b->offset]
+    int *pAddr = (int *)(b->data + relOffset - b->offset);
+    if (type == R_386_32) // 绝对地址修正
+    {
+        if (showLink)
+            printf("绝对地址修正：原地址=%08x\t", *pAddr);
+        *pAddr = symAddr;
+        if (showLink)
+            printf("修正后地址=%08x\n", *pAddr);
+    }
+    else if (type == R_386_PC32) // 相对地之修正
+    {
+        if (showLink)
+            printf("相对地址修正：原地址=%08x\t", *pAddr);
+        *pAddr = symAddr - relAddr + *pAddr;
+        if (showLink)
+            printf("修正后地址=%08x\n", *pAddr);
+    }
+}
+
 Linker::Linker()
 {
     segNames.push_back(".text");
@@ -233,6 +272,30 @@ void Linker::symParser()
     }
 }
 
+void Linker::relocate()
+{
+    // 重定位项符号必然在符号表中，且地址已经解析完毕
+    if (showLink)
+        printf("--------------重定位----------------\n");
+
+    for (int i = 0; i < elfs.size(); ++i)
+    {
+        vector<RelItem *> tab = elfs[i]->relTab; // 得到重定位表
+        for (int j = 0; j < tab.size(); ++j)     // 遍历重定位项
+        {
+            Elf32_Sym *sym = elfs[i]->symTab[tab[j]->relName]; // 重定位符号信息
+
+            unsigned int symAddr = sym->st_value;                                                      // 解析后的符号段偏移为虚拟地址
+            unsigned int relAddr = elfs[i]->shdrTab[tab[j]->segName]->sh_addr + tab[j]->rel->r_offset; // 重定位地址
+
+            // 重定位操作
+            if (showLink)
+                printf("%s\trelAddr=%08x\tsymAddr=%08x\n", tab[j]->relName.c_str(), relAddr, symAddr);
+            segLists[tab[j]->segName]->relocAddr(relAddr, ELF32_R_TYPE(tab[j]->rel->r_info), symAddr);
+        }
+    }
+}
+
 bool Linker::link(const char *dir)
 {
     collectInfo();   // 搜集段/符号信息
@@ -240,6 +303,7 @@ bool Linker::link(const char *dir)
         return false;
     allocAddr(); // 分配地址空间
     symParser(); // 符号地址解析
+    relocate();  // 重定位
 }
 
 Linker::~Linker()
