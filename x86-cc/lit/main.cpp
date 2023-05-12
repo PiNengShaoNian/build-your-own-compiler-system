@@ -18,5 +18,7 @@ int main(int argc, char *argv[])
         linker.addElf(arg.c_str()); // 添加目标文件
         i++;
     }
+    showLink = (argv[i + 1][0] == 'y'); // 获取参数
+    linker.link(desFileName.c_str());   // 开始链接
     return 0;
 }
