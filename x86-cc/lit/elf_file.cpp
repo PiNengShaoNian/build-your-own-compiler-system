@@ -32,6 +32,75 @@ Elf_file::Elf_file()
     elf_dir = NULL;
 }
 
+int Elf_file::getSegIndex(string segName)
+{
+    int index = 0;
+    for (int i = 0; i < shdrNames.size(); ++i)
+    {
+        if (shdrNames[i] == segName) // 找到段
+            break;
+        ++index;
+    }
+    return index;
+}
+
+void Elf_file::addPhdr(Elf32_Word type, Elf32_Off off, Elf32_Addr vaddr, Elf32_Word filesz,
+                       Elf32_Word memsz, Elf32_Word flags, Elf32_Word align)
+{
+    Elf32_Phdr *ph = new Elf32_Phdr();
+    ph->p_type = type;
+    ph->p_offset = off;
+    ph->p_vaddr = ph->p_paddr = vaddr;
+    ph->p_filesz = filesz;
+    ph->p_memsz = memsz;
+    ph->p_flags = flags;
+    ph->p_align = align;
+    phdrTab.push_back(ph);
+}
+
+void Elf_file::addShdr(string sh_name, Elf32_Word sh_type, Elf32_Word sh_flags, Elf32_Addr sh_addr, Elf32_Off sh_offset,
+                       Elf32_Word sh_size, Elf32_Word sh_link, Elf32_Word sh_info, Elf32_Word sh_addralign,
+                       Elf32_Word sh_entsize) // 添加一个段表项
+{
+    Elf32_Shdr *sh = new Elf32_Shdr();
+    sh->sh_name = 0;
+    sh->sh_type = sh_type;
+    sh->sh_flags = sh_flags;
+    sh->sh_addr = sh_addr;
+    sh->sh_offset = sh_offset;
+    sh->sh_size = sh_size;
+    sh->sh_link = sh_link;
+    sh->sh_info = sh_info;
+    sh->sh_addralign = sh_addralign;
+    sh->sh_entsize = sh_entsize;
+    shdrTab[sh_name] = sh;
+    shdrNames.push_back(sh_name);
+}
+
+void Elf_file::addSym(string st_name, Elf32_Sym *s)
+{
+    Elf32_Sym *sym = symTab[st_name] = new Elf32_Sym();
+    if (st_name == "")
+    {
+        sym->st_name = 0;
+        sym->st_value = 0;
+        sym->st_size = 0;
+        sym->st_info = 0;
+        sym->st_other = 0;
+        sym->st_shndx = 0;
+    }
+    else
+    {
+        sym->st_name = 0;
+        sym->st_value = s->st_value;
+        sym->st_size = s->st_size;
+        sym->st_info = s->st_info;
+        sym->st_other = s->st_other;
+        sym->st_shndx = s->st_shndx;
+    }
+    symNames.push_back(st_name);
+}
+
 void Elf_file::readElf(const char *dir)
 {
     string d = dir;
@@ -124,6 +193,46 @@ void Elf_file::readElf(const char *dir)
 
     delete[] strTabData; // 清空字符串表
     fclose(fp);
+}
+
+/*
+    dir:输出目录
+    flag:1-第一次写，文件头+PHT；2-第二次写，段表字符串表+段表+符号表+字符串表；
+*/
+void Elf_file::writeElf(const char *dir, int flag)
+{
+    if (flag == 1)
+    {
+        FILE *fp = fopen(dir, "w+");
+        fwrite(&ehdr, ehdr.e_ehsize, 1, fp); // elf文件头
+
+        if (!phdrTab.empty()) // 程序头表
+        {
+            for (int i = 0; i < phdrTab.size(); ++i)
+                fwrite(phdrTab[i], ehdr.e_phentsize, 1, fp);
+        }
+        fclose(fp);
+    }
+    else if (flag == 2)
+    {
+        FILE *fp = fopen(dir, "a+");
+        fwrite(shstrtab, shstrtabSize, 1, fp); //.shstrtab
+
+        for (int i = 0; i < shdrNames.size(); ++i) // 段表
+        {
+            Elf32_Shdr *sh = shdrTab[shdrNames[i]];
+            fwrite(sh, ehdr.e_shentsize, 1, fp);
+        }
+
+        for (int i = 0; i < symNames.size(); ++i) // 符号表
+        {
+            Elf32_Sym *sym = symTab[symNames[i]];
+            fwrite(sym, sizeof(Elf32_Sym), 1, fp);
+        }
+
+        fwrite(strtab, strtabSize, 1, fp); //.strtab
+        fclose(fp);
+    }
 }
 
 Elf_file::~Elf_file()

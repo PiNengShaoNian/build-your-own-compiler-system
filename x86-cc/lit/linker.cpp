@@ -296,14 +296,201 @@ void Linker::relocate()
     }
 }
 
+void Linker::assemExe()
+{
+    int *p_id = (int *)exe.ehdr.e_ident;
+    *p_id = 0x464c457f;
+    p_id++;
+    *p_id = 0x010101;
+    p_id++;
+    *p_id = 0;
+    p_id++;
+    *p_id = 0;
+
+    exe.ehdr.e_type = ET_EXEC;
+    exe.ehdr.e_machine = EM_386;
+    exe.ehdr.e_version = EV_CURRENT;
+    exe.ehdr.e_flags = 0;
+    exe.ehdr.e_ehsize = 52;
+
+    // 数据位置指针
+    unsigned int curOff = 52 + 32 * segNames.size(); // 文件头52B+程序头表项32*个数
+    exe.addShdr("", 0, 0, 0, 0, 0, 0, 0, 0, 0);      // 空段表项
+    //".shstrtab".length()+".symtab".length()+".strtab".length()+3;//段表字符串表大小
+    int shstrtabSize = 26;
+    for (int i = 0; i < segNames.size(); ++i)
+    {
+        string name = segNames[i];
+        shstrtabSize += name.length() + 1; // 考虑结束符'\0'
+
+        // 生成程序头表
+        Elf32_Word flags = PF_W | PF_R;           // 读写
+        Elf32_Word filesz = segLists[name]->size; // 占用磁盘大小
+
+        if (name == ".text") //.text段可读可执行
+            flags = PF_X | PF_R;
+
+        if (name == ".bss") //.bss段不占磁盘空间
+            filesz = 0;
+
+        exe.addPhdr(PT_LOAD, segLists[name]->offset, segLists[name]->baseAddr,
+                    filesz, segLists[name]->size, flags, MEM_ALIGN); // 添加程序头表项
+
+        // 计算有效数据段的大小和偏移,最后一个决定
+        // printf("%s:\tbase=%08x\tsize=%08x\n",name.c_str(),curOff,segLists[name]->size);
+        curOff = segLists[name]->offset; // 修正当前偏移，循环结束后保留的是.bss的基址
+
+        // 生成段表项
+        Elf32_Word sh_type = SHT_PROGBITS;
+        Elf32_Word sh_flags = SHF_ALLOC | SHF_WRITE;
+        Elf32_Word sh_align = 4; // 4B
+        if (name == ".bss")
+            sh_type = SHT_NOBITS;
+        if (name == ".text")
+        {
+            sh_flags = SHF_ALLOC | SHF_EXECINSTR;
+            sh_align = 16; // 16B
+        }
+        exe.addShdr(name, sh_type, sh_flags, segLists[name]->baseAddr, segLists[name]->offset,
+                    segLists[name]->size, SHN_UNDEF, 0, sh_align, 0); // 添加一个段表项，暂时按照4字节对齐
+    }
+    exe.ehdr.e_phoff = 52;
+    exe.ehdr.e_phentsize = 32;
+    exe.ehdr.e_phnum = segNames.size();
+    // 填充shstrtab数据
+    char *str = exe.shstrtab = new char[shstrtabSize];
+    exe.shstrtabSize = shstrtabSize;
+    int index = 0;
+
+    // 段表串名与索引映射
+    hash_map<string, int, string_hash> shstrIndex;
+    shstrIndex[".shstrtab"] = index;
+    strcpy(str + index, ".shstrtab");
+    index += 10;
+    shstrIndex[".symtab"] = index;
+    strcpy(str + index, ".symtab");
+    index += 8;
+    shstrIndex[".strtab"] = index;
+    strcpy(str + index, ".strtab");
+    index += 8;
+    shstrIndex[""] = index - 1;
+    for (int i = 0; i < segNames.size(); ++i)
+    {
+        shstrIndex[segNames[i]] = index;
+        strcpy(str + index, segNames[i].c_str());
+        index += segNames[i].length() + 1;
+    }
+
+    exe.addShdr(".shstrtab", SHT_STRTAB, 0, 0,
+                curOff, shstrtabSize, SHN_UNDEF,
+                0, 1, 0); //.shstrtab
+    // 1+segNames.size();//空表项+所有段数
+    exe.ehdr.e_shstrndx = exe.getSegIndex(".shstrtab");
+    curOff += shstrtabSize; // 段表偏移
+    exe.ehdr.e_shoff = curOff;
+    exe.ehdr.e_shentsize = 40;
+    exe.ehdr.e_shnum = 4 + segNames.size(); // 段表数
+
+    // 生成符号表项
+    curOff += 40 * (4 + segNames.size()); // 符号表偏移
+
+    // 符号表位置=（空表项+所有段数+段表字符串表项+符号表项+字符串表项）*40
+    //.symtab,sh_link 代表.strtab索引，默认在.symtab之后,sh_info不能确定
+    exe.addShdr(".symtab", SHT_SYMTAB, 0, 0, curOff, (1 + symDef.size()) * 16, 0, 0, 1, 16);
+    exe.shdrTab[".symtab"]->sh_link = exe.getSegIndex(".symtab") + 1; // 。strtab默认在.symtab之后
+
+    int strtabSize = 0;                     // 字符串表大小
+    exe.addSym("", NULL);                   // 空符号表项
+    for (int i = 0; i < symDef.size(); ++i) // 遍历所有符号
+    {
+        string name = symDef[i]->name;
+        strtabSize += name.length() + 1;
+        Elf32_Sym *sym = symDef[i]->prov->symTab[name];
+        // 重定位后可以修改了
+        sym->st_shndx = exe.getSegIndex(symDef[i]->prov->shdrNames[sym->st_shndx]);
+        exe.addSym(name, sym);
+    }
+    // 记录程序入口
+    exe.ehdr.e_entry = exe.symTab[START]->st_value;                                   // 程序入口地址
+    curOff += (1 + symDef.size()) * 16;                                               //.strtab偏移
+    exe.addShdr(".strtab", SHT_STRTAB, 0, 0, curOff, strtabSize, SHN_UNDEF, 0, 1, 0); //.strtab
+
+    // 填充strtab数据
+    str = exe.strtab = new char[strtabSize];
+    exe.strtabSize = strtabSize;
+    index = 0;
+    // 串表与索引映射
+    hash_map<string, int, string_hash> strIndex;
+    strIndex[""] = strtabSize - 1;
+    for (int i = 0; i < symDef.size(); ++i)
+    {
+        strIndex[symDef[i]->name] = index;
+        strcpy(str + index, symDef[i]->name.c_str());
+        index += symDef[i]->name.length() + 1;
+    }
+
+    // 更新符号表name
+    for (hash_map<string, Elf32_Sym *, string_hash>::iterator i = exe.symTab.begin(); i != exe.symTab.end(); ++i)
+    {
+        i->second->st_name = strIndex[i->first];
+    }
+
+    // 更新段表name
+    for (hash_map<string, Elf32_Shdr *, string_hash>::iterator i = exe.shdrTab.begin(); i != exe.shdrTab.end(); ++i)
+    {
+        i->second->sh_name = shstrIndex[i->first];
+    }
+}
+
+void Linker::exportElf(const char *dir)
+{
+    exe.writeElf(dir, 1); // 输出链接后的elf前半段
+
+    // 输出重要段数据
+    FILE *fp = fopen(dir, "a+");
+    char pad[1] = {0};
+
+    for (int i = 0; i < segNames.size(); ++i)
+    {
+        SegList *sl = segLists[segNames[i]];
+        int padnum = sl->offset - sl->begin;
+        while (padnum--)
+            fwrite(pad, 1, 1, fp); // 填充
+
+        // 输出数据
+        if (segNames[i] != ".bss")
+        {
+            Block *old = NULL;
+            char instPad[1] = {(char)0x90};
+            for (int j = 0; j < sl->blocks.size(); ++j)
+            {
+                Block *b = sl->blocks[j];
+                if (old != NULL) // 填充小段内的空隙
+                {
+                    padnum = b->offset - (old->offset + old->size);
+                    while (padnum--)
+                        fwrite(instPad, 1, 1, fp); // 填充
+                }
+                old = b;
+                fwrite(b->data, b->size, 1, fp);
+            }
+        }
+    }
+    fclose(fp);
+    exe.writeElf(dir, 2); // 输出链接后的elf后半段
+}
+
 bool Linker::link(const char *dir)
 {
     collectInfo();   // 搜集段/符号信息
     if (!symValid()) // 符号引用验证
         return false;
-    allocAddr(); // 分配地址空间
-    symParser(); // 符号地址解析
-    relocate();  // 重定位
+    allocAddr();    // 分配地址空间
+    symParser();    // 符号地址解析
+    relocate();     // 重定位
+    assemExe();     // 组装文件exe
+    exportElf(dir); // 输出elf可执行文件
+    return true;
 }
 
 Linker::~Linker()
